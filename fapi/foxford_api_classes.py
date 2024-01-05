@@ -223,7 +223,15 @@ class FoxBonus:
                 setattr(self, f"transaction_{i}", [amount, date, description])
 
 class Unseen_Webinars:
-    def __init__(self, json_data, session):
+    """
+    Параметры:
+        - `json_data (str или dict)`: JSON-данные для обработки. Может быть как строкой JSON, так и словарем.
+            
+    Исключения:
+        - `DataNotFound`: Если JSON-данные являются пустым списком.
+        - `ValueError`: Если JSON-данные не являются правильным форматом (строка JSON или словарь).
+    """
+    def __init__(self, json_data):
         if isinstance(json_data, str):
             data = json.loads(json_data)
         elif isinstance(json_data, dict):
