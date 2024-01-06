@@ -288,4 +288,5 @@ class Unseen_Webinars:
             setattr(self, f'total_unseen_webinars', i)
 
 class SocialProfile:
-    print("В Процессе Разработки!")
+    def __init__(self, json_data):
+        print("В Процессе Разработки!")
