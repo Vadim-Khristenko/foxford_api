@@ -418,7 +418,7 @@ class Foxford_API_Sync:
 #-------------------------------------------------------------------------------------------------
         
 class Foxford_API_Async:
-    def __init__(self, authorization:int=None, email:str=None, phone:str=None, password:str=None, class_code:str=None):
+    def __init__(self, authorization:int=None, email:str=None, phone:str=None, password:str=None, class_code:str=None, log:bool = True):
         """
         ## Внимание, если вы пытаетесь Использовать Данный метод для входа, то вы ошибаетесь!
         """
@@ -448,16 +448,18 @@ class Foxford_API_Async:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         }
         self.url = "https://foxford.ru"
+        self.log = log
 
     @staticmethod
-    async def login_by_email(email:str, password:str, captcha:bool=False):
+    async def login_by_email(email:str, password:str, captcha:bool=False, log:bool = True):
         """
         ### Авторизация пользователя при помощи Почты и Пароля.
 
         Параметры:
             - `email (str)`: Адрес электронной почты пользователя.
             - `password (str)`: Пароль для входа.
-            - `captcha (bool, опционально)`: Флаг, указывающий на необходимость капчи. По умолчанию False.
+            - `captcha (bool, опционально)`: Флаг, указывающий на необходимость дать время для ввода капчи. По умолчанию False.
+            - `log (bool, опционально)`: Флаг, указывающий на необходимость Отладочных Логов. По умолчанию True.
 
         Исключения:
             - `AlreadyLoggedIn`: Если вы уже авторизованы.
@@ -466,13 +468,13 @@ class Foxford_API_Async:
             - `UnknwonError`: Если произошла непредвиденная ошибка.
         """
         try:
-            instance = Foxford_API_Async()
+            instance = Foxford_API_Async(log=log)
             await instance.load_session()
             test_cookies = await instance.get_me()
             print(f"Авторизован под: {test_cookies.full_name}")
             return instance
         except Exception as e:
-            instance = Foxford_API_Async(authorization=1, email=email, password=password)
+            instance = Foxford_API_Async(authorization=1, email=email, password=password, log=log)
             wait_for_input_captcha = 90 if captcha else 1
             instance.login_in_foxford_by_email(wait_for_input_captcha)
             await instance.load_session()
@@ -481,13 +483,14 @@ class Foxford_API_Async:
             return instance
     
     @staticmethod
-    async def login_by_phone(phone:str, captcha:bool=False):
+    async def login_by_phone(phone:str, captcha:bool=False, log:bool = True):
         """
         ### Авторизация пользователя по номеру телефона.
                 
         Параметры:
             - `phone (str)`: Номер телефона пользователя.
-            - `captcha (bool, опционально)`: Использовать ли капчу при авторизации. По умолчанию False.
+            - `captcha (bool, опционально)`: Флаг, указывающий на необходимость дать время для ввода капчи. По умолчанию False.
+            - `log (bool, опционально)`: Флаг, указывающий на необходимость Отладочных Логов. По умолчанию True.
         
         Исключения:
             - `AlreadyLoggedIn`: Если вы уже авторизованы.
@@ -496,13 +499,13 @@ class Foxford_API_Async:
             - `UnknwonError`: Если произошла непредвиденная ошибка.
         """
         try:
-            instance = Foxford_API_Async()
+            instance = Foxford_API_Async(log=log)
             await instance.load_session()
             test_cookies = await instance.get_me()
             print(f"Авторизован под: {test_cookies.full_name}")
             return instance
         except Exception as e:
-            instance = Foxford_API_Async(authorization=2, phone=phone)
+            instance = Foxford_API_Async(authorization=2, phone=phone, log=log)
             wait_for_input_captcha = 90 if captcha else 1
             instance.login_in_foxford_by_phone(wait_for_input_captcha)
             await instance.load_session()
@@ -673,12 +676,17 @@ class Foxford_API_Async:
                 driver.quit()
                 logging.warning("Предупреждение! Возможно Google Driver не закрылся окончательно проверьте Дисптчер задач.")
 
-    async def load_session(self):
+    async def load_session(self, log:bool = True):
         """
         ### Загружает сессию
         Данный метод предназначен для загрузки Сессии из Файла `FOXSESSION.session`
         Файл Создаётся после успешной Аунтефикации.
+        
+        Аргументы:
+            - `log`: Позволяет специально выключить или включить Отладочную Информацию по умолчанию True.
         """
+        if log:
+            self.log = log
         if self.session is None:
             self.session = aiohttp.ClientSession()
         with open('FOXSESSION.session', 'r') as file:
@@ -689,9 +697,10 @@ class Foxford_API_Async:
                 if res.status == 200:
                     pre_data = await res.json()
                     test_cookie = SelfProfile(json_data=pre_data)
-                    print(f"Сессия пользователя {test_cookie.full_name} загружена Успешно!")
+                    if log: logging.info(f"Сессия пользователя {test_cookie.full_name} загружена Успешно!")
                 else:
-                    print(f"Ошибка Проверки Cookie!")
+                    if log: logging.warning(f"Валидация Сессии была провалена. От Сервера foxford.ru пришёл код {res.status} с ответом {await res.json()}!")
+                    raise SessionValidateError
         except:
             raise SessionUpdateNeed
 
@@ -705,7 +714,9 @@ class Foxford_API_Async:
         if self.session is not None:
             await self.session.close()
             self.session = None
+            if self.log: logging.info("Сессия успешно Завершена! Для активации сессии используйте load_session .")
         else:
+            if self.log: logging.warning("Произошла ошибка при завершении Сессии! Причина: Отсутствует объект session .")
             raise UnabletoCloseSession
 
     async def get_me(self):
@@ -723,12 +734,13 @@ class Foxford_API_Async:
             async with self.session.get(url="https://foxford.ru/api/user/me", headers=self.headers) as res:
                 if res.status == 200:
                     pre_data = await res.json()
+                    if self.log: logging.info(f"Успешно получены Данные о вашем Профиле!")
                     return SelfProfile(json_data=pre_data)
                 else:
-                    logging.warning(f"Не удалось получить данные о пользователе")
+                    if self.log: logging.warning(f"Не удалось получить данные о пользователе")
                     raise UnknwonError(f"В функции «get_me» произошла непредвиденная ошибка. Ошибка: {res.json()}")
         else:
-            logging.critical("Вы не Авторизованы!")
+            if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
         
     async def get_user(self, user_id: int):
@@ -750,15 +762,16 @@ class Foxford_API_Async:
             async with self.session.get(url=f"https://foxford.ru/api/users/{user_id}", headers=self.headers) as res:
                 if res.status == 200:
                     pre_data = await res.json()
+                    if self.log: logging.info(f"Данные о пользователе с ID {user_id} получены успешно!")
                     return UserProfile(json_data=pre_data)
                 elif res.status == 404:
-                    logging.error(f"Пользователь с ID {user_id} не найден!")
+                    if self.log: logging.error(f"Пользователь с ID {user_id} не найден! Сервер foxford.ru вернул {res.status} с ответными данными {await res.json()}")
                     raise UserNotFound
                 else:
-                    logging.warning(f"Не удалось получить данные о пользователе")
+                    if self.log: logging.warning(f"Не удалось получить данные о пользователе с ID {user_id}! Сервер foxford.ru вернул {res.status} с ответными данными {await res.json()}")
                     raise UnknwonError(f"В функции «get_user» произошла непредвиденная ошибка. Ошибка: {await res.json()}")
         else:
-            logging.critical("Вы не Авторизованы!")
+            if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
     
     async def get_bonus(self, page:int=1, per_page:int=100):
@@ -780,12 +793,13 @@ class Foxford_API_Async:
             async with self.session.get(url=f"https://foxford.ru/api/user/bonus_transactions?page={page}&per_page={per_page}", headers=self.headers) as res:
                 if res.status == 200:
                     pre_data = await res.json()
+                    if self.log: logging.info("Данные успешно получены! Начинаю процесс Сборки.")
                     return FoxBonus(json_data=pre_data)
                 else:
-                    logging.warning(f"Не удалось получить данные о бонусах")
+                    if self.log: logging.warning(f"Не удалось получить данные о бонусах. Сервер foxford.ru вернул {res.status} с ответными данными {pre_data}")
                     raise UnknwonError(f"В функции «get_bonus» произошла непредвиденная ошибка. Ошибка: {res.json()}")
         else:
-            logging.critical("Вы не Авторизованы!")
+            if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
         
     async def get_unseen_webinars(self):
@@ -804,10 +818,125 @@ class Foxford_API_Async:
             async with self.session.get(url="https://foxford.ru/api/user/objectives/unseen_webinars", headers=self.headers) as res:
                 if res.status == 200:
                     pre_data = await res.json()
+                    if self.log: logging.info("Успешно получены Данные о ваших не просмотренных Вебинарах.")
                     return Unseen_Webinars(json_data=pre_data)
                 else:
-                    logging.warning("Произошла ошибка при получении списка не просмотренных Вебинаров.")
+                    if self.log: logging.warning(f"Произошла ошибка при получении списка не просмотренных Вебинаров. Сервер foxford.ru вернул {res.status} с ответными данными {pre_data}")
                     raise UnknwonError(f"В функции «get_unseen_webinars» произошла непредвиденная ошибка. Ошибка: {res.json()}")
         else:
-            logging.critical("Вы не Авторизованы!")
+            if self.log: logging.critical("Вы не Авторизованы!")
+            raise NotLoggedIn
+
+    async def social_city_update(self, no_input:bool = False, all_automate:bool = False, **kwargs):
+        if all_automate and no_input is True:
+            raise InconsistentArgumentsSpecified("В функции «social_city_update» были указаны противоречивые Аргументы. Нельзя одновременно указывать no_input и all_automate")
+        if self.session is not None:
+            new_headers = self.headers.copy()
+            update_values = {
+                "Accept": "application/json",
+                "Host": "suggestions.dadata.ru",
+                "Sec-Fetch-Dest": "empty",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Site": "cross-site"
+            }
+            new_headers.update(update_values)
+            new_headers.update({"Authorization": "Token cafed81df04e2194c1a3bf9aefa9cdd9adf58afc"})
+            if all_automate:
+                city = "Россия, г Москва"
+                if self.log: logging.info(f"Выбран автоматический Режим заполнения данных профиля! Город: {city}")
+            elif no_input:
+                city = kwargs.get("city", city)
+                if city is None:
+                    if self.log: logging.warning("Kwarg Аргумент city не был найден при выполнении «social_city_update»")
+                    raise MissingPriorityArgument("Был Пропущен приоритетный kwarg Аргумент <<city>>!")
+            else:
+                city = input(str("Введите город (Пример: Россия Москва): "))
+            sugg_data = {
+                "count": 10,
+                "from_bound": {"value": "city"},
+                "locations": [{"country": "*"}],
+                "query": city,
+                "to_bound": {"value": "city"}
+            }
+            async with self.session.post(url="https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", headers=new_headers, data=sugg_data) as sugg_res:
+                if sugg_res.status == 200:
+                    sugg_data = await sugg_res.json()
+                    try:
+                        city_values = [item["value"] for item in sugg_data["suggestions"]]
+                        region_iso_codes = [item['data']['region_iso_code'] for item in sugg_data['suggestions']]
+                        country_iso_codes = [item['data']['country_iso_code'] for item in sugg_data['suggestions']]
+                        regions_with_type = [item['data']['region_with_type'] for item in sugg_data["suggestions"]]
+                        city_dict_list = [
+                            {
+                                "city_value": city,
+                                "region_iso_code": region_iso,
+                                "country_iso_code": country_iso,
+                                "region_with_type": region_type,
+                            }
+                        for city, region_iso, country_iso, region_type in zip(
+                            city_values, region_iso_codes, country_iso_codes, regions_with_type
+                            )
+                        ]
+                        # Создаем словарь с использованием enumerate
+                        city_dict = {str(i): city_data for i, city_data in enumerate(city_dict_list, 1)}
+                    except:
+                        if self.log: logging.warning("Сервер не вернул предложений для выбора.")
+                        raise SocialCityNotFoundError
+                    if city_dict:
+                        if no_input:
+                            if self.log: logging.info("Возвращаю список городов в формате JSON. Выберите тот, который вам нужен. Формат: {число: город, iso код региона, iso код страны, название города}")
+                            return city_dict
+                        elif no_input and all_automate is False:
+                            for i, value in enumerate(city_values, 1):
+                                print(f"{i}. {value}")
+                            if self.log: logging.info(f"Получено {i} значений с возможными городами!")
+                        if all_automate:
+                            city_index = 1
+                            city_selected_value = city_dict[city_index - 1]
+                            if self.log: logging.info(f"Автоматически выбранное значение: {city_selected_value['city_value']}")
+                        else:
+                            city_index = int(input("Выберите город: "))
+                            if 1 <= city_index <= len(city_dict):
+                                city_selected_value = city_dict[city_index - 1]
+                                if self.log: logging.info(f"Выбранное значение: {city_selected_value['city_value']}")
+                            else:
+                                if self.log: logging.warning("Выбрать город можно только из данных значений!")
+                                return "Провалено на этапе выбора Города!"
+                        fox_data = {
+                            "city_name": f"{city_selected_value['city_value']}",
+                            "country_iso_code": f"{city_selected_value['country_iso_code']}",
+                            "region_iso_code": f"{city_selected_value['region_iso_code']}",
+                            "region_name": f"{city_selected_value['region_with_type']}"
+                        }
+                    else:
+                        if self.log: logging.warning("Сервер не вернул предложений для выбора.")
+                        raise SocialCityNotFoundError
+            async with self.session.put(url="https://foxford.ru/api/user/city", headers=self.headers, data=fox_data) as res:
+                if res.status == 200:
+                    if self.log: logging.info("Данные изменены успешно!")
+                    return
+                else:
+                    if self.log: logging.warning("Произошла ошибка при изменении Города в профиле Найти Друзей / Социализация. Возможные причины ошибки ищите в Wiki нашей библиотеки.")
+                    raise UnknwonError(f"В Функции «social_city_update» произошла непредвиденная ошибка.")
+        else:
+            if self.log: logging.critical("Вы не Авторизованы!")
+            raise NotLoggedIn
+    
+    async def no_input_social_city_update(self, city_name:str, country_iso_code:str, region_iso_code:str, region_name:str):
+        fox_data = {
+            "city_name": f"{city_name}",
+            "country_iso_code": f"{country_iso_code}",
+            "region_iso_code": f"{region_iso_code}",
+            "region_name": f"{region_name}"
+        }
+        if self.session:
+            async with self.session.put(url="https://foxford.ru/api/user/city", headers=self.headers, data=fox_data) as res:
+                if res.status == 200:
+                    if self.log: logging.info("Данные изменены успешно!")
+                    return
+                else:
+                    if self.log: logging.warning("Произошла ошибка при изменении Города в профиле Найти Друзей / Социализация. Возможные причины ошибки ищите в Wiki нашей библиотеки.")
+                    raise UnknwonError(f"В Функции «social_city_update» произошла непредвиденная ошибка.")
+        else:
+            if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn

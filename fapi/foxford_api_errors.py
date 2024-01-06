@@ -57,3 +57,17 @@ class DataNotFound                    (Exception):
     def __init__(self):
         super().__init__('Данные не найдены! Сервер FOXFORD вернул Нулевое значение.')
         pass
+    
+class MissingPriorityArgument         (DefaultException): pass
+
+class InconsistentArgumentsSpecified  (DefaultException): pass
+
+class SessionValidateError            (Exception):
+    def __init__(self):
+        super().__init__('Ошибка при Валидации сессии! Нужно обновить Сессию. Для этого удалите файл с сессией и запустите код снова.')
+        pass
+    
+class SocialCityNotFoundError            (Exception):
+    def __init__(self):
+        super().__init__('Сервер не смог найти Схожих городов с указанным возможно вы указали город неправильно!')
+        pass

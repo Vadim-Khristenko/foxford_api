@@ -287,3 +287,4 @@ class Unseen_Webinars:
                 setattr(self, f'unseen_webinar_double_xp_deadline_{i}', webinar.get("double_xp_deadline"))
             setattr(self, f'total_unseen_webinars', i)
 
+class 
