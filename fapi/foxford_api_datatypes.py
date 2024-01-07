@@ -52,3 +52,7 @@ HOBBY_TRANSLATIONS = {
     24: "Languages",
 }
 
+USER_TYPES = {
+    "pupil": "Ученик",
+    "agent": "Учитель"
+}

@@ -549,6 +549,84 @@ class Foxford_API_Sync:
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
+    
+    def social_about_update(self, no_input:bool = False, all_automate:bool = False, **kwargs):
+        """
+        ### Синхронная функция, которая обновляет описание Пользователя в его социальном профиле.
+        
+        Аргументы:
+            - `no_input (bool, опционально)`: Если True, функция не будет запрашивать ввод от пользователя и будет использовать предоставленное значение Описания из словаря kwargs. По умолчанию False.
+            - `all_automate (bool, опционально)`: Если True, функция автоматически выберет значение Описания. По умолчанию False.
+            - `**kwargs`: Для передачи `about_me` при `no_input` True.
+                
+        Исключения:
+            - `InconsistentArgumentsSpecified`: Если указаны и all_automate и no_input как True.
+            - `MissingPriorityArgument`: Если при no_input отсутствует аргумент about_me.
+            - `UnknwonError`: Если произошла неизвестная ошибка при обновлении.
+            - `NotLoggedIn`: Если пользователь не авторизован.
+        """
+        if all_automate and no_input is True:
+            raise InconsistentArgumentsSpecified("В функции «social_about_update» были указаны противоречивые Аргументы. Нельзя одновременно указывать no_input и all_automate")
+        if self.session:
+            if all_automate:
+                user_info_res = self.session.get(url="https://foxford.ru/api/user/me", headers=self.headers)
+                if user_info_res.status_code == 200:
+                    pre_data = user_info_res.json()
+                    if self.log: logging.info(f"Успешно получены Данные о вашем Профиле!")
+                    me = SelfProfile(json_data=pre_data)
+                    full_name = me.full_name
+                    user_id = me.user_id
+                    social_user_id = me.socialization_profile_id
+                    me_timezone = me.timezone
+                    user_type = USER_TYPES.get(me.user_type)
+                else:
+                    if self.log: logging.warning(f"Не удалось получить данные о пользователе. Назначаю свои.")
+                    full_name = "FAPI - Участник."
+                    user_id = "Неизвестно"
+                    social_user_id = "Неизвестен"
+                    me_timezone = "Europe/Moscow"
+                    user_type = "Программист использующий FAPI"
+                about_me = f"""
+Привет! Меня зовут {full_name}!\n
+Я {user_type} на сайте FOXFORD!\n
+
+Мой ID: {user_id}.\n
+А вот также мой ID Социализации / Найти друзей: {social_user_id}\n
+Моё местное время {me_timezone}.\n
+
+FAPI: https://github.com/Vadim-Khristenko/foxford_api
+                """
+            elif no_input:
+                about_me = kwargs.get("about_me", about_me)
+                if about_me is None:
+                    if self.log: logging.warning("Kwarg Аргумент about_me не был найден при выполнении «social_about_update»")
+                    raise MissingPriorityArgument("Был Пропущен приоритетный kwarg Аргумент <<about_me>>!")
+            else:
+                about_me = str(input("Введите новое Описание Аккаунта: "))
+            fox_data = {
+                "user": {
+                    "address_attributes": {},
+                    "fake_user": False,
+                    "school_attributes":{
+                        "address_attributes": {}
+                    },                   
+                    "user_info_attributes": {
+                        "about": f"{about_me}",
+                        "caption": None,
+                        "parent_sms_required": False
+                    }
+                }
+            }
+            res = self.session.patch(url="https://foxford.ru/api/user/profile", headers=self.headers, data=fox_data)
+            if res.status_code == 200:
+                if self.log: logging.info("Данные изменены успешно!")
+                return
+            else:
+                if self.log: logging.warning("Произошла ошибка при изменении Описания в профиле Найти Друзей / Социализация. Возможные причины ошибки ищите в Wiki нашей библиотеки.")
+                raise UnknwonError(f"В Функции «social_about_update» произошла непредвиденная ошибка.")
+        else:
+            if self.log: logging.critical("Вы не Авторизованы!")
+            raise NotLoggedIn
 
 #-------------------------------------------------------------------------------------------------        
 # Дальше идёт Асинхронный API. | Авторизация всё ещё Синхронна, но постораюсь сделать Асинхронной.
@@ -1097,10 +1175,79 @@ class Foxford_API_Async:
             raise NotLoggedIn
         
     async def social_about_update(self, no_input:bool = False, all_automate:bool = False, **kwargs):
+        """
+        ### Асинхронная функция, которая обновляет описание Пользователя в его социальном профиле.
+        
+        Аргументы:
+            - `no_input (bool, опционально)`: Если True, функция не будет запрашивать ввод от пользователя и будет использовать предоставленное значение Описания из словаря kwargs. По умолчанию False.
+            - `all_automate (bool, опционально)`: Если True, функция автоматически выберет значение Описания. По умолчанию False.
+            - `**kwargs`: Для передачи `about_me` при `no_input` True.
+                
+        Исключения:
+            - `InconsistentArgumentsSpecified`: Если указаны и all_automate и no_input как True.
+            - `MissingPriorityArgument`: Если при no_input отсутствует аргумент about_me.
+            - `UnknwonError`: Если произошла неизвестная ошибка при обновлении.
+            - `NotLoggedIn`: Если пользователь не авторизован.
+        """
         if all_automate and no_input is True:
             raise InconsistentArgumentsSpecified("В функции «social_about_update» были указаны противоречивые Аргументы. Нельзя одновременно указывать no_input и all_automate")
         if self.session:
-            print("В процессе разработки")
+            if all_automate:
+                async with self.session.get(url="https://foxford.ru/api/user/me", headers=self.headers) as user_info_res:
+                    if user_info_res.status == 200:
+                        pre_data = await user_info_res.json()
+                        if self.log: logging.info(f"Успешно получены Данные о вашем Профиле!")
+                        me = SelfProfile(json_data=pre_data)
+                        full_name = me.full_name
+                        user_id = me.user_id
+                        social_user_id = me.socialization_profile_id
+                        me_timezone = me.timezone
+                        user_type = USER_TYPES.get(me.user_type)
+                    else:
+                        if self.log: logging.warning(f"Не удалось получить данные о пользователе. Назначаю свои.")
+                        full_name = "FAPI - Участник."
+                        user_id = "Неизвестно"
+                        social_user_id = "Неизвестен"
+                        me_timezone = "Europe/Moscow"
+                        user_type = "Программист использующий FAPI"
+                about_me = f"""
+Привет! Меня зовут {full_name}!\n
+Я {user_type} на сайте FOXFORD!\n
+
+Мой ID: {user_id}.\n
+А вот также мой ID Социализации / Найти друзей: {social_user_id}\n
+Моё местное время {me_timezone}.\n
+
+FAPI: https://github.com/Vadim-Khristenko/foxford_api
+                """
+            elif no_input:
+                about_me = kwargs.get("about_me", about_me)
+                if about_me is None:
+                    if self.log: logging.warning("Kwarg Аргумент about_me не был найден при выполнении «social_about_update»")
+                    raise MissingPriorityArgument("Был Пропущен приоритетный kwarg Аргумент <<about_me>>!")
+            else:
+                about_me = str(input("Введите новое Описание Аккаунта: "))
+            fox_data = {
+                "user": {
+                    "address_attributes": {},
+                    "fake_user": False,
+                    "school_attributes":{
+                        "address_attributes": {}
+                    },                   
+                    "user_info_attributes": {
+                        "about": f"{about_me}",
+                        "caption": None,
+                        "parent_sms_required": False
+                    }
+                }
+            }
+            async with self.session.patch(url="https://foxford.ru/api/user/profile", headers=self.headers, data=fox_data) as res:
+                if res.status == 200:
+                    if self.log: logging.info("Данные изменены успешно!")
+                    return
+                else:
+                    if self.log: logging.warning("Произошла ошибка при изменении Описания в профиле Найти Друзей / Социализация. Возможные причины ошибки ищите в Wiki нашей библиотеки.")
+                    raise UnknwonError(f"В Функции «social_about_update» произошла непредвиденная ошибка.")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
