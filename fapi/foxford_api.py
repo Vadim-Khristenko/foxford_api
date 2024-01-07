@@ -1251,3 +1251,5 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
+        
+    

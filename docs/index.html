@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta property="og:title" content="FAPI Docs">
+    <meta property="og:description" content="Сайт в разработке. Скоро тут появится документация.">
+    <meta property="og:image" content="{{ url_for('static', filename='/image/VG_Unicode_201434.jpg') }}">
+    <title>Сайт VSTUDIO</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='/css/bootstrap.min.css') }}">
+    <style>
+        body {
+            background-color: #ffffff;
+            transition: background-color 0.5s ease;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            min-height: 400px;
+        }
+
+        h1 {
+            color: #43c0c0e5;
+            font-size: 36px;
+            margin-bottom: 20px;
+            transition: color 0.5s ease;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            max-height: 256px;
+            animation: fadeIn 2s ease-in-out;
+        }
+
+        .theme-switcher {
+            cursor: pointer;
+            transition: background-color 0.5s ease;
+        }
+
+        .custom-button {
+            background-color: rgb(0, 0, 0);
+            border: none;
+            color: #43c0c0e5;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 24px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 16px;
+        }
+
+        .custom-button:hover {
+            background-color: #777777;
+            color: #2d7979; /* Цвет текста при наведении */
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Сайт в Разработке</h1>
+        <img src="{{ url_for('static', filename='/image/VG_Unicode_201434.jpg') }}" alt="Изображение">
+        <button class="custom-button theme-switcher">Сменить тему</button>
+        <script src="{{ url_for('static', filename='/js/bootstrap.bundle.min.js') }}"></script>
+        <script>
+            const themeSwitcher = document.querySelector('.theme-switcher');
+            const customButton = document.querySelector('.custom-button');
+        
+            themeSwitcher.addEventListener('click', () => {
+                const currentTheme = document.body.getAttribute('data-theme');
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                document.body.setAttribute('data-theme', newTheme);
+        
+                if (newTheme === 'light') {
+                    document.body.style.backgroundColor = '#ffffff';
+                    customButton.style.backgroundColor = 'rgb(0, 0, 0)';
+                    customButton.style.color = '#43c0c0e5';
+                    document.querySelector('h1').style.color = '#43c0c0e5';
+                } else {
+                    document.body.style.backgroundColor = '#111111';
+                    customButton.style.backgroundColor = 'rgb(36, 36, 36)';
+                    customButton.style.color = '#eaee0ee5';
+                    document.querySelector('h1').style.color = '#eaee0ee5';
+                }
+                updateButtonStyles();
+            });
+        
+            function updateButtonStyles() {
+                const currentTheme = document.body.getAttribute('data-theme');
+                const hoverBackgroundColor = currentTheme === 'light' ? '#777777' : 'rgb(65, 65, 65)';
+                const hoverTextColor = currentTheme === 'light' ? '#2d7979' : '#eaee0ee5';
+        
+                customButton.style.setProperty('--hover-background-color', hoverBackgroundColor);
+                customButton.style.setProperty('--hover-text-color', hoverTextColor);
+            }
+        
+            customButton.addEventListener('mouseenter', () => {
+                customButton.style.backgroundColor = customButton.style.getPropertyValue('--hover-background-color');
+                customButton.style.color = customButton.style.getPropertyValue('--hover-text-color');
+            });
+        
+            customButton.addEventListener('mouseleave', () => {
+                const currentTheme = document.body.getAttribute('data-theme');
+                const originalBackgroundColor = currentTheme === 'light' ? 'rgb(0, 0, 0)' : 'rgb(36, 36, 36)';
+                const originalTextColor = currentTheme === 'light' ? '#43c0c0e5' : '#eaee0ee5';
+
+                customButton.style.backgroundColor = originalBackgroundColor;
+                customButton.style.color = originalTextColor;
+            });
+        </script>               
+    </div>
+</body>
+</html>
