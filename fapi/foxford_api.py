@@ -684,7 +684,7 @@ class Foxford_API_Async:
         """
         try:
             instance = Foxford_API_Async(log=log)
-            await instance.load_session()
+            await instance.load_session(log=log)
             test_cookies = await instance.get_me()
             print(f"Авторизован под: {test_cookies.full_name}")
             return instance
@@ -692,7 +692,7 @@ class Foxford_API_Async:
             instance = Foxford_API_Async(authorization=1, email=email, password=password, log=log)
             wait_for_input_captcha = 90 if captcha else 1
             instance.login_in_foxford_by_email(wait_for_input_captcha)
-            await instance.load_session()
+            await instance.load_session(log=log)
             test_cookies = await instance.get_me()
             print(f"Авторизован под: {test_cookies.full_name}")
             return instance
@@ -715,7 +715,7 @@ class Foxford_API_Async:
         """
         try:
             instance = Foxford_API_Async(log=log)
-            await instance.load_session()
+            await instance.load_session(log=log)
             test_cookies = await instance.get_me()
             print(f"Авторизован под: {test_cookies.full_name}")
             return instance
@@ -723,7 +723,7 @@ class Foxford_API_Async:
             instance = Foxford_API_Async(authorization=2, phone=phone, log=log)
             wait_for_input_captcha = 90 if captcha else 1
             instance.login_in_foxford_by_phone(wait_for_input_captcha)
-            await instance.load_session()
+            await instance.load_session(log=log)
             test_cookies = await instance.get_me()
             print(f"Авторизован под: {test_cookies.full_name}")
             return instance
