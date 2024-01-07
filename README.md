@@ -15,6 +15,7 @@
 pip install git+https://github.com/Vadim-Khristenko/foxford_api
 ```
 
+## [Документация нажмите и вы перейдёте в Документацию.](https://volt-diamond.gitbook.io/foxford-api-docs/)
 ## Быстрый Старт:
 
 ### Синхронный код
