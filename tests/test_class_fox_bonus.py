@@ -1,5 +1,5 @@
 import json
-from foxford_api.fapi.foxford_api_classes import FoxBonus
+from fapi import FoxBonus
 
 def test_fox_bonus():
     json_data = {
