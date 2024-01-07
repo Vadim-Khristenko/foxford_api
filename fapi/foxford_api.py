@@ -419,6 +419,24 @@ class Foxford_API_Sync:
             raise NotLoggedIn
     
     async def social_city_update(self, no_input:bool = False, all_automate:bool = False, **kwargs):
+        """
+        ### Синхронная функция, которая обновляет информацию о городе пользователя в его социальном профиле.
+                        
+        Аргументы:
+            - `no_input (bool, опционально)`: Если True, функция не будет запрашивать ввод от пользователя и будет использовать предоставленное значение города из словаря kwargs. По умолчанию False.
+            - `all_automate (bool, опционально)`: Если True, функция автоматически выберет значение города. По умолчанию False.
+            - `**kwargs`: Дополнительные именованные аргументы, которые могут содержать значение города.
+                
+        Исключения:
+            - `InconsistentArgumentsSpecified`: Если одновременно указаны аргументы all_automate и no_input.
+            - `MissingPriorityArgument`: Если no_input равно True и значение города не указано в словаре kwargs.
+            - `SocialCityNotFoundError`: Если сервер не возвращает предложений для выбора города.
+            - `UnknownError`: Если происходит неожиданная ошибка при обновлении города в социальном профиле пользователя.
+                
+        Возвращает:
+            Если `no_input` равно `True`, функция возвращает словарь, содержащий список городов с соответствующими кодами региона и страны.
+            В противном случае возвращает `None`.   
+        """
         if all_automate and no_input is True:
             raise InconsistentArgumentsSpecified("В функции «social_city_update» были указаны противоречивые Аргументы. Нельзя одновременно указывать no_input и all_automate")
         if self.session is not None:
@@ -947,6 +965,24 @@ class Foxford_API_Async:
             raise NotLoggedIn
 
     async def social_city_update(self, no_input:bool = False, all_automate:bool = False, **kwargs):
+        """
+        ### Асинхронная функция, которая обновляет информацию о городе пользователя в его социальном профиле.
+                
+        Аргументы:
+            - `no_input (bool, опционально)`: Если True, функция не будет запрашивать ввод от пользователя и будет использовать предоставленное значение города из словаря kwargs. По умолчанию False.
+            - `all_automate (bool, опционально)`: Если True, функция автоматически выберет значение города. По умолчанию False.
+            - `**kwargs`: Дополнительные именованные аргументы, которые могут содержать значение города.
+                
+        Исключения:
+            - `InconsistentArgumentsSpecified`: Если одновременно указаны аргументы all_automate и no_input.
+            - `MissingPriorityArgument`: Если no_input равно True и значение города не указано в словаре kwargs.
+            - `SocialCityNotFoundError`: Если сервер не возвращает предложений для выбора города.
+            - `UnknownError`: Если происходит неожиданная ошибка при обновлении города в социальном профиле пользователя.
+                
+        Возвращает:
+            Если `no_input` равно `True`, функция возвращает словарь, содержащий список городов с соответствующими кодами региона и страны.
+            В противном случае возвращает `None`.   
+        """
         if all_automate and no_input is True:
             raise InconsistentArgumentsSpecified("В функции «social_city_update» были указаны противоречивые Аргументы. Нельзя одновременно указывать no_input и all_automate")
         if self.session is not None:
@@ -1056,6 +1092,15 @@ class Foxford_API_Async:
                 else:
                     if self.log: logging.warning("Произошла ошибка при изменении Города в профиле Найти Друзей / Социализация. Возможные причины ошибки ищите в Wiki нашей библиотеки.")
                     raise UnknwonError(f"В Функции «social_city_update» произошла непредвиденная ошибка.")
+        else:
+            if self.log: logging.critical("Вы не Авторизованы!")
+            raise NotLoggedIn
+        
+    async def social_about_update(self, no_input:bool = False, all_automate:bool = False, **kwargs):
+        if all_automate and no_input is True:
+            raise InconsistentArgumentsSpecified("В функции «social_about_update» были указаны противоречивые Аргументы. Нельзя одновременно указывать no_input и all_automate")
+        if self.session:
+            print("В процессе разработки")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn

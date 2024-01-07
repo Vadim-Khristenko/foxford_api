@@ -289,4 +289,93 @@ class Unseen_Webinars:
 
 class SocialProfile:
     def __init__(self, json_data):
-        print("В Процессе Разработки!")
+        if isinstance(json_data, str):
+            data = json.loads(json_data)
+        elif isinstance(json_data, dict):
+            data = json_data
+        elif json_data == []:
+            logging.warning("Данных не обнаружено. | Unseen_Webinars")
+            raise DataNotFound
+        else:
+            raise ValueError("Неверный формат данных. Ожидается JSON-строка или словарь.")
+        
+        self.social_profiles = data
+        if self.social_profiles:
+            i = 0
+            for social_profile in self.social_profiles:
+                i += 1
+                setattr(self, f'social_profile_id_{i}', social_profile.get("id"))
+                setattr(self, f'social_profile_user_id_{i}', social_profile.get("user_id"))
+                setattr(self, f'social_profile_first_name_{i}', social_profile.get("first_name"))
+                setattr(self, f'social_profile_last_name_{i}', social_profile.get("last_name"))
+                setattr(self, f'social_profile_birthday_{i}', social_profile.get("birthday"))
+                setattr(self, f'social_profile_age_{i}', social_profile.get("age"))
+                setattr(self, f'social_profile_state_{i}', social_profile.get("state"))
+                setattr(self, f'social_profile_is_filled_{i}', social_profile.get("is_filled"))
+                setattr(self, f'social_profile_avatar_url_{i}', social_profile.get("avatar_url"))
+                
+                grade = social_profile.get("grade")
+                if grade:
+                    setattr(self, f'social_profile_grade_{i}', grade)
+                    setattr(self, f'social_profile_grade_id_{i}', grade.get("id"))
+                    setattr(self, f'social_profile_grade_index_{i}', grade.get("index"))
+                    setattr(self, f'social_profile_grade_name_{i}', grade.get("name"))
+                    
+                city = social_profile.get("city")
+                if city:
+                    setattr(self, f'social_profile_city_{i}', city)
+                    setattr(self, f'social_profile_city_id_{i}', city.get("id"))
+                    setattr(self, f'social_profile_city_name_{i}', city.get("city_name"))
+                    setattr(self, f'social_profile_city_region_iso_code_{i}', city.get("region_iso_code"))
+                    setattr(self, f"social_profile_city_region_name_{i}", city.get("region_name"))
+                    setattr(self, f"social_profile_city_country_iso_code_{i}", city.get("country_iso_code"))
+                    setattr(self, f"social_profile_city_country_name_{i}", city.get("country_name"))
+                
+                about_hobby_ids = social_profile.get("hobby_ids")
+                if about_hobby_ids:
+                    setattr(self, f'social_profile_hobby_{i}', about_hobby_ids)
+                    hobby_total = 0
+                    for hobby_id in about_hobby_ids:
+                        hobby_total += 1
+                        Hobby_Name =     HOBBY_NAMES.get(hobby_id)
+                        Hobby_API_Name = HOBBY_TRANSLATIONS.get(hobby_id)
+                        setattr(self, f"social_profile_hobby_{Hobby_API_Name}_{i}", [Hobby_Name, hobby_id])
+                    setattr(self, f"social_profile_hobby_total_{i}", hobby_total)
+                
+                social_links = social_profile.get("social_links")
+                if social_links:
+                    setattr(self, f'social_profile_links_{i}', social_links)
+                    links_total = 0
+                    for social_link in social_links:
+                        links_total += 1
+                        id =       social_link.get("id")
+                        provider = social_link.get("provider")
+                        login =    social_link.get("login")
+                        setattr(self, f"social_profile_link_{provider}_{i}", [id, provider, login])
+                        setattr(self, f"social_profile_link_{provider}_id_{i}", id)
+                        setattr(self, f"social_profile_link_{provider}_login_{i}", login)
+                    setattr(self, f"social_profile_links_total_{i}", links_total)
+                
+                setattr(self, f'social_profile_about_{i}', social_profile.get("about"))
+                
+                matches = social_profile.get("matches")
+                if matches:
+                    setattr(self, f"social_profile_matches_{i}", matches)
+                    setattr(self, f"social_profile_matches_same_country_{i}", matches.get("same_country"))
+                    setattr(self, f"social_profile_matches_same_grade_{i}", matches.get("same_grade"))
+                    same_hobbies_about_hobby_ids = matches.get("same_hobbies")
+                    if same_hobbies_about_hobby_ids:
+                        setattr(self, f'social_profile_matches_same_hobbies_{i}', same_hobbies_about_hobby_ids)
+                        same_hobby_total = 0
+                        for same_hobby_id in same_hobbies_about_hobby_ids:
+                            same_hobby_total += 1
+                            Same_Hobby_Name =     HOBBY_NAMES.get(same_hobby_id)
+                            Same_Hobby_API_Name = HOBBY_TRANSLATIONS.get(same_hobby_id)
+                            setattr(self, f"social_profile_matches_same_hobby_{Same_Hobby_API_Name}_{i}", [Same_Hobby_Name, same_hobby_id])
+                        setattr(self, f"social_profile_matches_same_hobby_total_{i}", same_hobby_total)
+                    setattr(self, f"social_profile_matches_score_{i}", matches.get("score"))
+                
+                setattr(self, f"social_profile_search_score_{i}", social_profile.get("search_score"))
+                setattr(self, f"social_profile_favorite_{i}", social_profile.get("favorite"))
+                    
+            setattr(self, f'total_social_profiles', i)
