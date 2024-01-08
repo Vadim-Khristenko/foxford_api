@@ -1,0 +1,16 @@
+name: Greetings
+
+on: [pull_request_target, issues]
+
+jobs:
+  greeting:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+    - uses: actions/first-interaction@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        issue-message: "Welcome! I see you here for the first time! Then let's go, I'll greet you and inform the owner of the repository about your problem."
+        pr-message: "Whoa whoa! This is a powerful Pull Request, I will immediately inform the Repository Owner about it. And also Welcome, because this is your first time here! :)"
