@@ -12,6 +12,11 @@
 
 Вы можете установить библиотеку при помощи `pip`:
 ```bash
+pip install FOXFORD-API
+```
+
+Или Предварительную Версию при помощи `pip`:
+```bash
 pip install git+https://github.com/Vadim-Khristenko/foxford_api
 ```
 
