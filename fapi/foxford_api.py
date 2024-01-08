@@ -627,6 +627,49 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
+        
+    def social_profiles_get(self, page: int = 1, per_page: int = 5):
+        """
+        ### Получает социальные профили с использованием указанных значений страницы и количества профилей на странице.
+        
+        Аргументы:
+            - `page (int, optional)`: Номер страницы для получения данных. По умолчанию 1.
+            - `per_page (int, optional)`: До какой страницы собирать профили. По умолчанию 5.
+        
+        Исключения:
+            - `InconsistentArgumentsSpecified`: Если значение страницы больше значения per_page.
+            - `AccessDeniedError`: Если сервер возвращает код состояния 403.
+            - `NotLoggedIn`: Если пользователь не авторизован.
+        
+        Возвращает:
+            - `SocialProfile`: Экземпляр класса `SocialProfile`, содержащий полученные профили.
+        """
+        if page > per_page:
+            raise InconsistentArgumentsSpecified("В Функции «social_profiles_get» были указаны противоречивые Аргументы. Нельзя указывать значение page больше чем per_page")
+        if self.session:
+            all_profiles = []
+            while True:
+                with self.session.get(url=f"https://foxford.ru/api/user/socialization?page={page}", headers=self.headers) as foxford_response:
+                    if foxford_response.status == 200:
+                        data = foxford_response.json()
+                        if self.log: logging.info(f"Успешно получены Данные о профилях Найти Друзей / Социализация. Страница: {page}")
+                        if not data['profiles']: break
+
+                        all_profiles.append(data['profiles'])
+                        if page == per_page: break
+
+                        page += 1
+                    elif foxford_response.status == 403:
+                        if self.log: logging.warning(f"Сервер ФоксФорда вернул: {foxford_response.json()}! Доступ запрещён!")
+                        raise AccessDeniedError
+                    else:
+                        if self.log: logging.warning(f"Не удалось получить данные о профилях пользователей социализации.")
+                        break
+            return SocialProfile(json_data=all_profiles)
+        else:
+            if self.log: logging.critical("Вы не Авторизованы!")
+            raise NotLoggedIn
+
 
 #-------------------------------------------------------------------------------------------------        
 # Дальше идёт Асинхронный API. | Авторизация всё ещё Синхронна, но постораюсь сделать Асинхронной.
@@ -1203,6 +1246,9 @@ class Foxford_API_Async:
                         social_user_id = me.socialization_profile_id
                         me_timezone = me.timezone
                         user_type = USER_TYPES.get(me.user_type)
+                    elif user_info_res.status == 403:
+                        if self.log: logging.warning(f"Сервер ФоксФорда вернул: {await user_info_res.json()}! Доступ запрещён!")
+                        raise AccessDeniedError
                     else:
                         if self.log: logging.warning(f"Не удалось получить данные о пользователе. Назначаю свои.")
                         full_name = "FAPI - Участник."
@@ -1252,4 +1298,45 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
         
-    
+    async def social_profiles_get(self, page:int = 1, per_page:int = 5):
+        """
+        ### Получает социальные профили с использованием указанных значений страницы и количества профилей на странице.
+        
+        Аргументы:
+            - `page (int, optional)`: Номер страницы для получения данных. По умолчанию 1.
+            - `per_page (int, optional)`: До какой страницы собирать профили. По умолчанию 5.
+        
+        Исключения:
+            - `InconsistentArgumentsSpecified`: Если значение страницы больше значения per_page.
+            - `AccessDeniedError`: Если сервер возвращает код состояния 403.
+            - `NotLoggedIn`: Если пользователь не авторизован.
+        
+        Возвращает:
+            - `SocialProfile`: Экземпляр класса `SocialProfile`, содержащий полученные профили.
+        """
+        if page > per_page:
+            raise InconsistentArgumentsSpecified("В Функции «social_profiles_get» были указаны противоречивые Аргументы. Нельзя указывать значение page больше чем per_page")
+        if self.session:
+            all_profiles = []
+            while True:
+                async with self.session.get(url=f"https://foxford.ru/api/user/socialization?page={page}", headers=self.headers) as foxford_response:
+                    if foxford_response.status == 200:
+                        data = await foxford_response.json()
+                        if self.log: logging.info(f"Успешно получены Данные о профилях Найти Друзей / Социализация. Страница: {page}")
+                        if not data['profiles']: break
+                        
+                        all_profiles.append(data['profiles'])
+                        if page == per_page: break
+                        
+                        page += 1
+                    elif foxford_response.status == 403:
+                        if self.log: logging.warning(f"Сервер ФоксФорда вернул: {await foxford_response.json()}! Доступ запрещён!")
+                        raise AccessDeniedError
+                    else:
+                        if self.log: logging.warning(f"Не удалось получить данные о профилях пользователей социализации.")
+                        break
+            return SocialProfile(json_data=all_profiles)
+        else:
+            if self.log: logging.critical("Вы не Авторизованы!")
+            raise NotLoggedIn
+        

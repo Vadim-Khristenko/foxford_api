@@ -71,3 +71,8 @@ class SocialCityNotFoundError            (Exception):
     def __init__(self):
         super().__init__('Сервер не смог найти Схожих городов с указанным возможно вы указали город неправильно!')
         pass
+    
+class AccessDeniedError                  (Exception):
+    def __init__(self):
+        super().__init__('Доступ запрещён! У данного аккаунта нет доступа к этому разделу.')
+        pass

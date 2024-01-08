@@ -294,7 +294,7 @@ class SocialProfile:
         elif isinstance(json_data, dict):
             data = json_data
         elif json_data == []:
-            logging.warning("Данных не обнаружено. | Unseen_Webinars")
+            logging.warning("Данных не обнаружено. | SocialProfile")
             raise DataNotFound
         else:
             raise ValueError("Неверный формат данных. Ожидается JSON-строка или словарь.")
