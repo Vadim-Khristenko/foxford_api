@@ -379,3 +379,4 @@ class SocialProfile:
                 setattr(self, f"social_profile_favorite_{i}", social_profile.get("favorite"))
                     
             setattr(self, f'total_social_profiles', i)
+            
