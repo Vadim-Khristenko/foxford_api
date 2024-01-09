@@ -147,6 +147,7 @@ class Foxford_API_Sync:
             self.log = log
         if self.session is None:
             self.session = requests.Session()
+        cookies = json.loads(cookies)
         self.session.cookies.update(cookies)
 
     def close_session(self):
@@ -1001,8 +1002,9 @@ class Foxford_API_Async:
             raise SessionUpdateNeed
         
     @staticmethod
-    async def login_by_test(cookies, log:bool=True):
+    async def login_by_test(cookie, log:bool=True):
         instance = Foxford_API_Async(log=log, cfs=False)
+        cookies = json.loads(cookie)
         await instance.tag_test_load_session(cookies=cookies, log=log)
         test_cookies = await instance.get_me()
         print(f"Авторизован под: {test_cookies.full_name}")
