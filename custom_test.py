@@ -3,10 +3,10 @@ import pytest
 from fapi import Foxford_API_Sync as sync_api
 from fapi import Foxford_API_Async as async_api
 import os
-email = os.environ.get("EMAIL")
-password = os.environ.get("PASSWORD")
 
 def test_custom_functionality():
+    email = os.environ.get("EMAIL")
+    password = os.environ.get("PASSWORD")
     email = str(email)
     password = str(password)
     sync_session = sync_api.login_by_email(email=email, password=password, create_file_session=False)
