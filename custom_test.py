@@ -27,4 +27,5 @@ def parse_args():
 
 if __name__ == '__main__':
     email, password = parse_args()
-    pytest.main([__file__, email, password])
+    pytest.main([__file__, f'--email={email}', f'--password={password}'])
+    
