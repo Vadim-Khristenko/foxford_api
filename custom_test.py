@@ -21,10 +21,10 @@ def test_custom_functionality(email, password):
 
 # Если нужно, добавьте функцию для обработки аргументов командной строки.
 def parse_args():
-    email = os.environ.get("FOXFORD_EMAIL")
-    password = os.environ.get("FOXFORD_PASSWORD")
+    email = os.environ.get("EMAIL")
+    password = os.environ.get("PASSWORD")
     return email, password
 
 if __name__ == '__main__':
     email, password = parse_args()
-    pytest.main([__file__, '--email', email, '--password', password])
+    pytest.main([__file__, email, password])
