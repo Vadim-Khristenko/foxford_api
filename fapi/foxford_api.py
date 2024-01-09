@@ -32,7 +32,7 @@ $$/        $$$$$$/  $$/   $$/ $$/        $$$$$$/  $$/   $$/ $$$$$$$/        $$/ 
 
 
 class Foxford_API_Sync:
-    def __init__(self, authorization:int=None, email:str=None, phone:str=None, password:str=None, class_code:str=None, log:bool = True):
+    def __init__(self, authorization:int=None, email:str=None, phone:str=None, password:str=None, class_code:str=None, log:bool = True, cfs:bool=True):
         """
         ## Внимание, если вы пытаетесь Использовать Данный метод для входа, то вы ошибаетесь!
         """
@@ -62,6 +62,7 @@ class Foxford_API_Sync:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         }
         self.log = log
+        self.cfs = cfs
 
 
     @staticmethod
@@ -133,7 +134,14 @@ class Foxford_API_Sync:
         with open('FOXSESSION.session', 'r') as file:
             cookies = json.load(file)
         self.session.cookies.update(cookies)
-        
+    
+    @staticmethod
+    def login_by_test(cookies, log:bool=True):
+        instance = Foxford_API_Sync(log=log, cfs=False)
+        instance.tag_test_load_session(cookies=cookies, log=log)
+        test_cookies = instance.get_me()
+        print(f"Авторизован под: {test_cookies.full_name}")
+        return instance
     def tag_test_load_session(self, cookies, log:bool=True):
         if log:
             self.log = log
@@ -992,6 +1000,14 @@ class Foxford_API_Async:
         except:
             raise SessionUpdateNeed
         
+    @staticmethod
+    async def login_by_test(cookies, log:bool=True):
+        instance = Foxford_API_Async(log=log, cfs=False)
+        await instance.tag_test_load_session(cookies=cookies, log=log)
+        test_cookies = await instance.get_me()
+        print(f"Авторизован под: {test_cookies.full_name}")
+        return instance
+    
     async def tag_test_load_session(self, cookies, log:bool=True):
         if log:
             self.log=log
