@@ -1,0 +1,32 @@
+name: Run Custom Tests
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  run_custom_tests:
+    runs-on: ubuntu-latest
+
+    env:
+      FOXFORD_EMAIL: ${{ secrets.FOXFORD_EMAIL_TEST }}
+      FOXFORD_PASSWORD: ${{ secrets.FOXFORD_PASSWORD_TEST }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.11
+
+    - name: Install dependencies
+      run: |
+       pip install -U FOXFORD-API
+       pip install flake8 pytest
+
+    - name: Run custom tests
+      run: |
+        python custom_test.py --email $FOXFORD_EMAIL --password $FOXFORD_PASSWORD

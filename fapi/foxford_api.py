@@ -65,7 +65,7 @@ class Foxford_API_Sync:
 
 
     @staticmethod
-    def login_by_email(email:str, password:str, captcha:bool=False, log:bool = True):
+    def login_by_email(email:str, password:str, captcha:bool=False, log:bool = True, create_file_session:bool = True):
         """
         ### Авторизация пользователя при помощи Почты и Пароля.
 
@@ -73,6 +73,8 @@ class Foxford_API_Sync:
             - `email (str)`: Адрес электронной почты пользователя.
             - `password (str)`: Пароль для входа.
             - `captcha (bool, необязательно)`: Флаг, указывающий на необходимость капчи. По умолчанию False.
+            - `log (bool, необязательно)`: Флаг, указывающий на необходимость Дополнительных Логов. По умолчанию True
+            - `create_file_session (bool, необязательно)`: Флаг, указывающий на необходимость скоранять Сессию в файл. По умолчанию True
 
         Исключения:
             - `AlreadyLoggedIn`: Если вы уже авторизованы.
@@ -89,19 +91,21 @@ class Foxford_API_Sync:
         except Exception as e:
             instance = Foxford_API_Sync(authorization=1, email=email, password=password, log=log)
             wait_for_input_captcha = 90 if captcha else 1
-            instance.login_in_foxford_by_email(wait_for_input_captcha)
+            instance.login_in_foxford_by_email(wait_for_input_captcha=wait_for_input_captcha, cfs=create_file_session)
             test_cookies = instance.get_me()
             print(f"Авторизован под: {test_cookies.full_name}")
             return instance
     
     @staticmethod
-    def login_by_phone(phone:str, captcha:bool=False, log:bool = True):
+    def login_by_phone(phone:str, captcha:bool=False, log:bool = True, create_file_session:bool = True):
         """
         ### Авторизация пользователя по номеру телефона.
                 
         Параметры:
             - `phone (str)`: Номер телефона пользователя.
             - `captcha (bool, необязательно)`: Флаг, указывающий на необходимость капчи. По умолчанию False.
+            - `log (bool, необязательно)`: Флаг, указывающий на необходимость Дополнительных Логов. По умолчанию True
+            - `create_file_session (bool, необязательно)`: Флаг, указывающий на необходимость скоранять Сессию в файл. По умолчанию True
         
         Исключения:
             - `AlreadyLoggedIn`: Если вы уже авторизованы.
@@ -118,7 +122,7 @@ class Foxford_API_Sync:
         except Exception as e:
             instance = Foxford_API_Sync(authorization=2, phone=phone, log=log)
             wait_for_input_captcha = 90 if captcha else 1
-            instance.login_in_foxford_by_phone(wait_for_input_captcha)
+            instance.login_in_foxford_by_phone(wait_for_input_captcha=wait_for_input_captcha, cfs=create_file_session)
             test_cookies = instance.get_me()
             print(f"Авторизован под: {test_cookies.full_name}")
             return instance
@@ -145,12 +149,13 @@ class Foxford_API_Sync:
         else:
             raise UnabletoCloseSession
 
-    def login_in_foxford_by_email(self, wait_for_input_captcha:int):
+    def login_in_foxford_by_email(self, wait_for_input_captcha:int, cfs:bool):
         """
             Авторизуется на веб-сайте Foxford, используя указанный адрес электронной почты и пароль.
             
             Аргументы:
                 - `wait_for_input_captcha (int, обязательно)`: Время ожидания Ввода Captcha.
+                - `cfs (bool, обязательно)`: Сохранять сессию в Файл.
 
             Исключения:
                 - `AlreadyLoggedIn`: Если вы уже авторизованы.
@@ -205,8 +210,11 @@ class Foxford_API_Sync:
             cookie_dict = {cookie['name']: cookie['value'] for cookie in cookies}
             self.cookie_dict = cookie_dict
             self.session.cookies.update(self.cookie_dict)
-            with open('FOXSESSION.session', 'w') as file:
-                json.dump(self.session.cookies.get_dict(), file)
+            if cfs:
+                with open('FOXSESSION.session', 'w') as file:
+                    json.dump(self.session.cookies.get_dict(), file)
+            else:
+                logging.info("Создание Файла Сессии было отключено!")
 
         except TimeoutException:
             raise NeedCaptchaSolving
@@ -226,12 +234,13 @@ class Foxford_API_Sync:
                 driver.quit()
                 logging.warning("Предупреждение! Возможно Google Driver не закрылся окончательно проверьте Дисптчер задач.")
 
-    def login_in_foxford_by_phone(self, wait_for_input_captcha:int):
+    def login_in_foxford_by_phone(self, wait_for_input_captcha:int, cfs:bool):
         """
             Авторизуется на веб-сайте Foxford, используя указанный адрес электронной почты и пароль.
             
             Аргументы:
                 - `wait_for_input_captcha (int, обязательно)`: Время ожидания Ввода Captcha.
+                - `cfs (bool, обязательно)`: Сохранять сессию в Файл.
 
             Исключения:
                 - `AlreadyLoggedIn`: Если вы уже авторизованы.
@@ -289,8 +298,11 @@ class Foxford_API_Sync:
             cookie_dict = {cookie['name']: cookie['value'] for cookie in cookies}
             self.cookie_dict = cookie_dict
             self.session.cookies.update(self.cookie_dict)
-            with open('FOXSESSION.session', 'w') as file:
-                json.dump(self.session.cookies.get_dict(), file)
+            if cfs:
+                with open('FOXSESSION.session', 'w') as file:
+                    json.dump(self.session.cookies.get_dict(), file)
+            else:
+                logging.info("Создание Файла Сессии было отключено!")
 
         except TimeoutException:
             raise NeedCaptchaSolving
@@ -676,7 +688,7 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
 #-------------------------------------------------------------------------------------------------
         
 class Foxford_API_Async:
-    def __init__(self, authorization:int=None, email:str=None, phone:str=None, password:str=None, class_code:str=None, log:bool = True):
+    def __init__(self, authorization:int=None, email:str=None, phone:str=None, password:str=None, class_code:str=None, log:bool = True, cfs:bool = True):
         """
         ## Внимание, если вы пытаетесь Использовать Данный метод для входа, то вы ошибаетесь!
         """
@@ -707,9 +719,10 @@ class Foxford_API_Async:
         }
         self.url = "https://foxford.ru"
         self.log = log
+        self.cfs = cfs
 
     @staticmethod
-    async def login_by_email(email:str, password:str, captcha:bool=False, log:bool = True):
+    async def login_by_email(email:str, password:str, captcha:bool=False, log:bool = True, create_file_session:bool = True):
         """
         ### Авторизация пользователя при помощи Почты и Пароля.
 
@@ -717,7 +730,9 @@ class Foxford_API_Async:
             - `email (str)`: Адрес электронной почты пользователя.
             - `password (str)`: Пароль для входа.
             - `captcha (bool, опционально)`: Флаг, указывающий на необходимость дать время для ввода капчи. По умолчанию False.
-            - `log (bool, опционально)`: Флаг, указывающий на необходимость Отладочных Логов. По умолчанию True.
+            - `log (bool, необязательно)`: Флаг, указывающий на необходимость Дополнительных Логов. По умолчанию True
+            - `create_file_session (bool, необязательно)`: Флаг, указывающий на необходимость скоранять Сессию в файл. По умолчанию True
+        
 
         Исключения:
             - `AlreadyLoggedIn`: Если вы уже авторизованы.
@@ -726,29 +741,31 @@ class Foxford_API_Async:
             - `UnknwonError`: Если произошла непредвиденная ошибка.
         """
         try:
-            instance = Foxford_API_Async(log=log)
+            instance = Foxford_API_Async(log=log, cfs=create_file_session)
             await instance.load_session(log=log)
             test_cookies = await instance.get_me()
             print(f"Авторизован под: {test_cookies.full_name}")
             return instance
         except Exception as e:
-            instance = Foxford_API_Async(authorization=1, email=email, password=password, log=log)
+            instance = Foxford_API_Async(authorization=1, email=email, password=password, log=log, cfs=create_file_session)
             wait_for_input_captcha = 90 if captcha else 1
             instance.login_in_foxford_by_email(wait_for_input_captcha)
-            await instance.load_session(log=log)
+            if create_file_session: await instance.load_session(log=log)
             test_cookies = await instance.get_me()
             print(f"Авторизован под: {test_cookies.full_name}")
             return instance
     
     @staticmethod
-    async def login_by_phone(phone:str, captcha:bool=False, log:bool = True):
+    async def login_by_phone(phone:str, captcha:bool=False, log:bool = True, create_file_session:bool = True):
         """
         ### Авторизация пользователя по номеру телефона.
                 
         Параметры:
             - `phone (str)`: Номер телефона пользователя.
             - `captcha (bool, опционально)`: Флаг, указывающий на необходимость дать время для ввода капчи. По умолчанию False.
-            - `log (bool, опционально)`: Флаг, указывающий на необходимость Отладочных Логов. По умолчанию True.
+            - `log (bool, необязательно)`: Флаг, указывающий на необходимость Дополнительных Логов. По умолчанию True
+            - `create_file_session (bool, необязательно)`: Флаг, указывающий на необходимость скоранять Сессию в файл. По умолчанию True
+        
         
         Исключения:
             - `AlreadyLoggedIn`: Если вы уже авторизованы.
@@ -757,16 +774,16 @@ class Foxford_API_Async:
             - `UnknwonError`: Если произошла непредвиденная ошибка.
         """
         try:
-            instance = Foxford_API_Async(log=log)
+            instance = Foxford_API_Async(log=log, cfs=create_file_session)
             await instance.load_session(log=log)
             test_cookies = await instance.get_me()
             print(f"Авторизован под: {test_cookies.full_name}")
             return instance
         except Exception as e:
-            instance = Foxford_API_Async(authorization=2, phone=phone, log=log)
+            instance = Foxford_API_Async(authorization=2, phone=phone, log=log, cfs=create_file_session)
             wait_for_input_captcha = 90 if captcha else 1
             instance.login_in_foxford_by_phone(wait_for_input_captcha)
-            await instance.load_session(log=log)
+            if create_file_session: await instance.load_session(log=log)
             test_cookies = await instance.get_me()
             print(f"Авторизован под: {test_cookies.full_name}")
             return instance
@@ -830,8 +847,11 @@ class Foxford_API_Async:
             cookies = driver.get_cookies()
             cookie_dict = {cookie['name']: cookie['value'] for cookie in cookies}
             self.cookie_dict = cookie_dict
-            with open('FOXSESSION.session', 'w') as file:
-                json.dump(self.cookie_dict, file)
+            if self.cfs:
+                with open('FOXSESSION.session', 'w') as file:
+                    json.dump(self.cookie_dict, file)
+            else:
+                self.session.cookie_jar.update_cookies(cookie_dict)
 
         except TimeoutException:
             raise NeedCaptchaSolving
@@ -913,8 +933,11 @@ class Foxford_API_Async:
             cookies = driver.get_cookies()
             cookie_dict = {cookie['name']: cookie['value'] for cookie in cookies}
             self.cookie_dict = cookie_dict
-            with open('FOXSESSION.session', 'w') as file:
-                json.dump(self.cookie_dict, file)
+            if self.cfs:
+                with open('FOXSESSION.session', 'w') as file:
+                    json.dump(self.cookie_dict, file)
+            else:
+                self.session.cookie_jar.update_cookies(cookie_dict)
 
         except TimeoutException:
             raise NeedCaptchaSolving
