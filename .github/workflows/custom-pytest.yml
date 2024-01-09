@@ -10,8 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      FOXFORD_EMAIL: ${{ secrets.FOXFORD_EMAIL_TEST }}
-      FOXFORD_PASSWORD: ${{ secrets.FOXFORD_PASSWORD_TEST }}
+      FOXFORD_TEST_COOKIES: ${{ secrets.FOXFORD_TEST_COOKIES }}
 
     steps:
     - name: Checkout repository
@@ -29,8 +28,7 @@ jobs:
 
     - name: Run custom tests
       run: |
-       export EMAIL=$FOXFORD_EMAIL
-       export PASSWORD=$FOXFORD_PASSWORD
+       export TEST_COOKIES=$FOXFORD_TEST_COOKIES
        python custom_test.py
   
   

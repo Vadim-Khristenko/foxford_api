@@ -133,6 +133,13 @@ class Foxford_API_Sync:
         with open('FOXSESSION.session', 'r') as file:
             cookies = json.load(file)
         self.session.cookies.update(cookies)
+        
+    def tag_test_load_session(self, cookies, log:bool=True):
+        if log:
+            self.log = log
+        if self.session is None:
+            self.session = requests.Session()
+        self.session.cookies.update(cookies)
 
     def close_session(self):
         """
@@ -973,6 +980,24 @@ class Foxford_API_Async:
         with open('FOXSESSION.session', 'r') as file:
             cookie_dict = json.load(file)
         self.session.cookie_jar.update_cookies(cookie_dict)
+        try:
+            async with self.session.get(url="https://foxford.ru/api/user/me", headers=self.headers) as res:
+                if res.status == 200:
+                    pre_data = await res.json()
+                    test_cookie = SelfProfile(json_data=pre_data)
+                    if log: logging.info(f"Сессия пользователя {test_cookie.full_name} загружена Успешно!")
+                else:
+                    if log: logging.warning(f"Валидация Сессии была провалена. От Сервера foxford.ru пришёл код {res.status} с ответом {await res.json()}!")
+                    raise SessionValidateError
+        except:
+            raise SessionUpdateNeed
+        
+    async def tag_test_load_session(self, cookies, log:bool=True):
+        if log:
+            self.log=log
+        if self.session is None:
+            self.session = aiohttp.ClientSession()
+        self.session.cookie_jar.update_cookies(cookies)
         try:
             async with self.session.get(url="https://foxford.ru/api/user/me", headers=self.headers) as res:
                 if res.status == 200:

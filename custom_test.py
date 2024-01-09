@@ -5,11 +5,8 @@ from fapi import Foxford_API_Async as async_api
 import os
 
 def test_custom_functionality():
-    email = os.environ.get("EMAIL")
-    password = os.environ.get("PASSWORD")
-    email = str(email)
-    password = str(password)
-    sync_session = sync_api.login_by_email(email=email, password=password, create_file_session=False)
+    cookie = os.environ.get("TEST_COOKIES")
+    sync_session = sync_api.tag_test_load_session(cookies=cookie)
     result_me_Fname = "FoxFord BOT"
     result_me_Sname = "BOT F."
     me = sync_session.get_me()
