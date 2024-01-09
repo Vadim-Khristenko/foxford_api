@@ -3,8 +3,10 @@ import pytest
 from fapi import Foxford_API_Sync as sync_api
 from fapi import Foxford_API_Async as async_api
 import os
+email = os.environ.get("EMAIL")
+password = os.environ.get("PASSWORD")
 
-def test_custom_functionality(email, password):
+def test_custom_functionality():
     email = str(email)
     password = str(password)
     sync_session = sync_api.login_by_email(email=email, password=password, create_file_session=False)
@@ -19,13 +21,6 @@ def test_custom_functionality(email, password):
     assert me_bonus.bonus_amount == 0
     
 
-# Если нужно, добавьте функцию для обработки аргументов командной строки.
-def parse_args():
-    email = os.environ.get("EMAIL")
-    password = os.environ.get("PASSWORD")
-    return email, password
-
 if __name__ == '__main__':
-    email, password = parse_args()
-    pytest.main([__file__, f'--email={email}', f'--password={password}'])
+    pytest.main([__file__])
     
