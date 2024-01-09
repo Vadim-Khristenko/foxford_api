@@ -37,4 +37,4 @@ jobs:
     - name: Running Test with PyTest
       run: |
        # Run Pytest
-       pytest
+       pytest --ignore=custom_test.py

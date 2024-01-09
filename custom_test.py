@@ -2,6 +2,7 @@ import argparse
 import pytest
 from fapi import Foxford_API_Sync as sync_api
 from fapi import Foxford_API_Async as async_api
+import os
 
 def test_custom_functionality(email, password):
     email = str(email)
@@ -20,11 +21,10 @@ def test_custom_functionality(email, password):
 
 # Если нужно, добавьте функцию для обработки аргументов командной строки.
 def parse_args():
-    parser = argparse.ArgumentParser(description='Run custom tests.')
-    parser.add_argument('--email', required=True, help='Email for testing')
-    parser.add_argument('--password', required=True, help='Password for testing')
-    return parser.parse_args()
+    email = os.environ.get("FOXFORD_EMAIL")
+    password = os.environ.get("FOXFORD_PASSWORD")
+    return email, password
 
 if __name__ == '__main__':
-    args = parse_args()
-    pytest.main([__file__, '--email', args.email, '--password', args.password])
+    email, password = parse_args()
+    pytest.main([__file__, '--email', email, '--password', password])
