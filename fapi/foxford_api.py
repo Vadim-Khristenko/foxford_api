@@ -180,7 +180,7 @@ class Foxford_API_Sync:
                 - `UnknwonError`: Если произошла непредвиденная ошибка.
         """
         if self.session is not None:
-            AlreadyLoggedIn
+            raise AlreadyLoggedIn
         chrome_options = ChromeOptions()
         driver= Chrome(
             options = chrome_options,
@@ -266,7 +266,7 @@ class Foxford_API_Sync:
                 - `UnknwonError`: Если произошла непредвиденная ошибка.
         """
         if self.session is not None:
-            AlreadyLoggedIn
+            raise AlreadyLoggedIn
         chrome_options = ChromeOptions()
         driver= Chrome(
             options = chrome_options,
