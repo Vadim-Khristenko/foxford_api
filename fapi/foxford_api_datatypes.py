@@ -65,3 +65,8 @@ SCHOOL_YEARS_TRANSLATIONS = {
     "2025-god": "2025 год"
 }
 
+NOTIFICATION_TRANSLATIONS = {
+    "вас ждёт домашка!": "homework",
+    "скоро занятие!": "lesson_near",
+    "фоксики": "foxbonus"
+}

@@ -1406,4 +1406,20 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
         
+    async def unread_notifications_get(self):
+        if self.session:
+            async with self.session.get(url="https://foxford.ru/api/user/notifications", headers=self.headers) as foxford_response:
+                if foxford_response.status == 200:
+                    if self.log: logging.info("Успешно получены Данные о непрочитанных уведомлениях.")
+                    return await foxford_response.json()
+                elif foxford_response.status == 403:
+                    if self.log: logging.warning(f"Сервер ФоксФорда вернул: {await foxford_response.json()}! Доступ запрещён!")
+                    raise AccessDeniedError
+                else:
+                    if self.log: logging.warning(f"Не удалось получить уведомления.")
+                    raise UnknwonError
+        else:
+            if self.log: logging.critical("Вы не Авторизованы!")
+            raise NotLoggedIn
+        
     
