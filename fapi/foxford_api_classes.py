@@ -397,7 +397,10 @@ class UnreadNotification:
             i = 0
             for notifiaction in self.unread_notifications:
                 i += 1
+                pre_data_class = notifiaction.get("title")
+                type_class = next((translation for ru_code, translation in NOTIFICATION_TRANSLATIONS.items() if ru_code in pre_data_class.lower()), "unknown")
                 setattr(self, f'unread_notification_id_{i}', notifiaction.get("id"))
+                setattr(self, f'unread_notification_type_{i}', type_class)
                 setattr(self, f'unread_notification_created_at_{i}', notifiaction.get("created_at"))
                 setattr(self, f'unread_notification_read_at_{i}', notifiaction.get("read_at"))
                 setattr(self, f'unread_notification_title_{i}', notifiaction.get("title"))
