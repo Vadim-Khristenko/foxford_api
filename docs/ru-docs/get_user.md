@@ -8,7 +8,13 @@ description: Описание метода get_user()
 
 Данный метод требует ввода значения user\_id
 
-#### Возвращает информацию о пользователе в виде класса UserProfile
+#### Получает Профиль пользователя из API на основе предоставленного идентификатора пользователя.
+
+Параметры: - `user_id (int)`: Идентификатор пользователя для получения Профиля пользователя.
+
+Возвращает: - `UserProfile`: Экземпляр класса [UserProfile](klassy/userprofile.md), представляющий Профиль полученного пользователя.
+
+Исключения: - `UserNotFound`: Если профиль пользователь с предоставленным идентификатором не найден. - `UnknwonError`: Если произошла непредвиденная ошибка при получении профиля пользователя. - `NotLoggedIn`: Если пользователь не авторизован.
 
 
 
@@ -17,8 +23,14 @@ description: Описание метода get_user()
 ```python
 from fapi import Foxford_API_Sync
 
-user_id = 1
-me = session.get_user(user_id)
+try:
+    user_id = 1
+    user = session.get_user(user_id)
+    print(f"Данные пользователя {user.name} успешно получены!")
+except UnknwonError as e:
+    print(f"Произошла ошибка: {e}")
+except NotLoggedIn:
+    print("Пользователь не авторизован")
 ```
 
 #### Асинхронный вызов
@@ -26,6 +38,12 @@ me = session.get_user(user_id)
 ```python
 from fapi import Foxford_API_Async
 
-user_id = 1
-me = await session.get_me()
+try:
+    user_id = 1
+    user = await session.get_me()
+    print(f"Данные пользователя {user.name} успешно получены!")
+except UnknwonError as e:
+    print(f"Произошла ошибка: {e}")
+except NotLoggedIn:
+    print("Пользователь не авторизован")
 ```
