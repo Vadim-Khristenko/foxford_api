@@ -721,7 +721,7 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
                 raise AccessDeniedError
             else:
                 if self.log: logging.warning(f"Не удалось получить уведомления.")
-                raise UnknwonError
+                raise UnknwonError('В Функции «unread_notifications_get» произошла непредвиденная ошибка.')
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -1487,7 +1487,7 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
                     raise AccessDeniedError
                 else:
                     if self.log: logging.warning(f"Не удалось получить уведомления.")
-                    raise UnknwonError
+                    raise UnknwonError('В Функции «unread_notifications_get» произошла непредвиденная ошибка.')
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
