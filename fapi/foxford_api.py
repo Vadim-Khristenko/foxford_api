@@ -446,7 +446,7 @@ class Foxford_API_Sync:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
     
-    async def social_city_update(self, no_input:bool = False, all_automate:bool = False, **kwargs):
+    def social_city_update(self, no_input:bool = False, all_automate:bool = False, **kwargs):
         """
         ### Синхронная функция, которая обновляет информацию о городе пользователя в его социальном профиле.
                         
@@ -678,7 +678,7 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
             all_profiles = []
             while True:
                 with self.session.get(url=f"https://foxford.ru/api/user/socialization?page={page}", headers=self.headers) as foxford_response:
-                    if foxford_response.status == 200:
+                    if foxford_response.status_code == 200:
                         data = foxford_response.json()
                         if self.log: logging.info(f"Успешно получены Данные о профилях Найти Друзей / Социализация. Страница: {page}")
                         if not data['profiles']: break
@@ -687,7 +687,7 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
                         if page == per_page: break
 
                         page += 1
-                    elif foxford_response.status == 403:
+                    elif foxford_response.status_code == 403:
                         if self.log: logging.warning(f"Сервер ФоксФорда вернул: {foxford_response.json()}! Доступ запрещён!")
                         raise AccessDeniedError
                     else:
@@ -698,6 +698,75 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
 
+    def unread_notification_get(self):
+        """
+        ### Получает непрочитанные уведомления пользователя под которым вы вошли в систему.
+                
+        Возвращает:
+            - `UnreadNotification`: Объект, представляющий непрочитанные уведомления.
+                    
+        Вызывает:
+            - `AccessDeniedError`: Если сервер возвращает статус код 403.
+            - `UnknwonError`: Если происходит неизвестная ошибка во время запроса.
+            - `NotLoggedIn`: Если пользователь не аутентифицирован.
+        """
+        if self.session:
+            foxford_response = self.session.get(url="https://foxford.ru/api/user/notifications/unread", headers=self.headers)
+            if foxford_response.status_code == 200:
+                pre_data = foxford_response.json()
+                if self.log: logging.info("Успешно получены Данные о непрочитанных уведомлениях.")
+                return UnreadNotification(json_data=pre_data)
+            elif foxford_response.status_code == 403:
+                if self.log: logging.warning(f"Сервер ФоксФорда вернул: {foxford_response.json()}! Доступ запрещён!")
+                raise AccessDeniedError
+            else:
+                if self.log: logging.warning(f"Не удалось получить уведомления.")
+                raise UnknwonError
+        else:
+            if self.log: logging.critical("Вы не Авторизованы!")
+            raise NotLoggedIn
+        
+    def unread_notifications_get(self, page: int = 1, per_page: int = 5):
+        """
+        ### Получает непрочитанные уведомления пользователя под которым вы вошли в систему.
+        
+        Аргументы:
+            - `page (int)`: Номер страницы уведомлений для извлечения. По умолчанию 1.
+            - `per_page (int)`: Количество уведомлений на странице. По умолчанию 5.
+        
+        Возвращает:
+            - `UnreadNotification`: Объект, содержащий непрочитанные уведомления.
+        
+        Вызывает:
+            - `InconsistentArgumentsSpecified`: Если page больше per_page.
+            - `AccessDeniedError`: Если сервер возвращает статус код 403.
+            - `NotLoggedIn`: Если пользователь не вошел в систему.
+        """
+        if page > per_page:
+            raise InconsistentArgumentsSpecified("В Функции «unread_notifications_get» были указаны противоречивые Аргументы. Нельзя указывать значение page больше чем per_page")
+        if self.session:
+            all_unread_notifications = []
+            while True:
+                with self.session.get(url=f"https://foxford.ru/api/user/notifications/unread?page={page}", headers=self.headers) as foxford_response:
+                    if foxford_response.status_code == 200:
+                        data = foxford_response.json()
+                        if self.log: logging.info(f"Успешно получены Данные о профилях Найти Друзей / Социализация. Страница: {page}")
+                        if not data: break
+
+                        all_unread_notifications.extend(data)
+                        if page == per_page: break
+
+                        page += 1
+                    elif foxford_response.status_code == 403:
+                        if self.log: logging.warning(f"Сервер ФоксФорда вернул: {foxford_response.json()}! Доступ запрещён!")
+                        raise AccessDeniedError
+                    else:
+                        if self.log: logging.warning(f"Не удалось получить данные о профилях пользователей социализации.")
+                        break
+            return UnreadNotification(json_data=all_unread_notifications)
+        else:
+            if self.log: logging.critical("Вы не Авторизованы!")
+            raise NotLoggedIn
 
 #-------------------------------------------------------------------------------------------------        
 # Дальше идёт Асинхронный API. | Авторизация всё ещё Синхронна, но постораюсь сделать Асинхронной.
@@ -1408,10 +1477,11 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
         
     async def unread_notifications_get(self):
         if self.session:
-            async with self.session.get(url="https://foxford.ru/api/user/notifications", headers=self.headers) as foxford_response:
+            async with self.session.get(url="https://foxford.ru/api/user/notifications/unread", headers=self.headers) as foxford_response:
                 if foxford_response.status == 200:
+                    pre_data = await foxford_response.json()
                     if self.log: logging.info("Успешно получены Данные о непрочитанных уведомлениях.")
-                    return await foxford_response.json()
+                    return UnreadNotification(json_data=pre_data)
                 elif foxford_response.status == 403:
                     if self.log: logging.warning(f"Сервер ФоксФорда вернул: {await foxford_response.json()}! Доступ запрещён!")
                     raise AccessDeniedError
@@ -1422,4 +1492,44 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
         
-    
+    async def unread_notifications_get(self, page: int = 1, per_page: int = 5):
+        """
+        ### Получает непрочитанные уведомления пользователя под которым вы вошли в систему.
+        
+        Аргументы:
+            - `page (int)`: Номер страницы уведомлений для извлечения. По умолчанию 1.
+            - `per_page (int)`: Количество уведомлений на странице. По умолчанию 5.
+        
+        Возвращает:
+            - `UnreadNotification`: Объект, содержащий непрочитанные уведомления.
+        
+        Вызывает:
+            - `InconsistentArgumentsSpecified`: Если page больше per_page.
+            - `AccessDeniedError`: Если сервер возвращает статус код 403.
+            - `NotLoggedIn`: Если пользователь не вошел в систему.
+        """
+        if page > per_page:
+            raise InconsistentArgumentsSpecified("В Функции «unread_notifications_get» были указаны противоречивые Аргументы. Нельзя указывать значение page больше чем per_page")
+        if self.session:
+            all_unread_notifications = []
+            while True:
+                async with self.session.get(url=f"https://foxford.ru/api/user/notifications/unread?page={page}", headers=self.headers) as foxford_response:
+                    if foxford_response.status == 200:
+                        data = await foxford_response.json()
+                        if self.log: logging.info(f"Успешно получены Данные о профилях Найти Друзей / Социализация. Страница: {page}")
+                        if not data: break
+
+                        all_unread_notifications.extend(data)
+                        if page == per_page: break
+
+                        page += 1
+                    elif foxford_response.status == 403:
+                        if self.log: logging.warning(f"Сервер ФоксФорда вернул: {await foxford_response.json()}! Доступ запрещён!")
+                        raise AccessDeniedError
+                    else:
+                        if self.log: logging.warning(f"Не удалось получить данные о профилях пользователей социализации.")
+                        break
+            return UnreadNotification(json_data=all_unread_notifications)
+        else:
+            if self.log: logging.critical("Вы не Авторизованы!")
+            raise NotLoggedIn

@@ -380,3 +380,29 @@ class SocialProfile:
                     
             setattr(self, f'total_social_profiles', i)
             
+class UnreadNotification:
+    def __init__(self, json_data):
+        if isinstance(json_data, str):
+            data = json.loads(json_data)
+        elif isinstance(json_data, dict):
+            data = json_data
+        elif json_data == []:
+            logging.warning("Данных не обнаружено. | SocialProfile")
+            raise DataNotFound
+        else:
+            raise ValueError("Неверный формат данных. Ожидается JSON-строка или словарь.")
+    
+        self.unread_notifications = data
+        if self.unread_notifications:
+            i = 0
+            for notifiaction in self.unread_notifications:
+                i += 1
+                setattr(self, f'unread_notification_id_{i}', notifiaction.get("id"))
+                setattr(self, f'unread_notification_created_at_{i}', notifiaction.get("created_at"))
+                setattr(self, f'unread_notification_read_at_{i}', notifiaction.get("read_at"))
+                setattr(self, f'unread_notification_title_{i}', notifiaction.get("title"))
+                setattr(self, f'unread_notification_text_{i}', notifiaction.get("text"))
+                setattr(self, f'unread_notification_action_url_{i}', notifiaction.get("action_url"))
+                setattr(self, f'unread_notification_icon_url_{i}', notifiaction.get("icon_url"))
+                
+            setattr(self, f'total_unread_notifications', i)
