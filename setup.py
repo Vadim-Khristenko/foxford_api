@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='FOXFORD_API',
-    version='0.1.3-alpha',
+    version='0.1.4-alpha',
     description='FOXFORD Student API\nБиблиотека для Работы с Бекэндом Платформы FOXFORD',
     long_description="""
 FOXFORD Student API
@@ -14,6 +14,7 @@ FOXFORD Student API
 - Взаимодействие с данными бекенда для автоматизации процессов.
 
 Эта библиотека позволяет легко интегрировать возможности FOXFORD в ваши приложения, обеспечивая быстрый и эффективный доступ к данным и функциям этой платформы.
+Документация: https://volt-diamond.gitbook.io/foxford-api-docs/
 """,
     author="VOLT_DIAMOND",
     packages=find_packages(),
