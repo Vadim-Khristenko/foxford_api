@@ -5,5 +5,5 @@ from .foxford_api_datatypes import *
 from .foxford_api_utils import *
 import asyncio
 
-__version__ = "0.1.4a1.1"
+__version__ = "0.1.4a2"
 check_library_version(lib_name="FOXFORD-API", installed_lib_name="fapi")
