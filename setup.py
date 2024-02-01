@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='FOXFORD_API',
-    version='0.1.4-alpha-1',
+    version='0.1.4-alpha-1.1',
     description='FOXFORD Student API\nБиблиотека для Работы с Бекэндом Платформы FOXFORD',
     long_description="""
 FOXFORD Student API
