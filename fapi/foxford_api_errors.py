@@ -1,9 +1,6 @@
 import sys
 from fapi.foxford_api_utils import *
 
-class DefaultException(Exception):
-    def __init__(self, message):
-        super().__init__(message)
 
 class AlreadyLoggedIn       (Exception):
     def __init__(self):
@@ -42,10 +39,12 @@ class NeedCaptchaSolving      (Exception):
         super().__init__('Нужно ввести капчу. Для этого вы можете отредактировать код Библиотеки или указать captcha=True.')
         
 
-class UnknownError            (DefaultException): 
+class UnknownError            (Exception): 
     """
     Неизвестная ошибка.
     """
+    def __init__(self, message):
+        super().__init__(f"Unknown Error: {message}")
 
 class UserNotFound            (Exception):
     def __init__(self):
@@ -67,15 +66,19 @@ class DataNotFound                    (Exception):
         super().__init__('Данные не найдены! Сервер FOXFORD вернул Нулевое значение.')
         
     
-class MissingPriorityArgument         (DefaultException): 
+class MissingPriorityArgument         (Exception): 
     """
     Пропущен приоритетный Аргумет!
     """
+    def __init__(self, message):
+        super().__init__(f"MissingPriorityArgument Error: {message}")
 
-class InconsistentArgumentsSpecified  (DefaultException): 
+class InconsistentArgumentsSpecified  (Exception): 
     """
     Несоответствие аргументов!
     """
+    def __init__(self, message):
+        super().__init__(f"InconsistentArgumentsSpecified Error: {message}")
 
 class SessionValidateError            (Exception):
     def __init__(self):

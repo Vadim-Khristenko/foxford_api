@@ -33,7 +33,6 @@ $$/        $$$$$$/  $$/   $$/ $$/        $$$$$$/  $$/   $$/ $$$$$$$/        $$/ 
                                                                                                     
 """
 
-
 class Foxford_API_Sync:
     def __init__(self, authorization:int=None, email:str=None, phone:str=None, password:str=None, class_code:str=None, log:bool = True, cfs:bool=True, StopErrors:bool=True):
         global stoperrors
@@ -67,44 +66,7 @@ class Foxford_API_Sync:
         }
         self.log = log
         self.stoperrors = StopErrors
-        if self.stoperrors:
-            sys.excepthook = self.custom_exception_handler_sync
         self.cfs = cfs
-
-    def custom_exception_handler_sync(type, value, traceback):
-        """
-        Custom exception handler for handling different types of exceptions.
-        """
-        error_codes = {
-            UnknownError: 501,
-            EmailValidationFail: 502,
-            NeedCaptchaSolving: 503,
-            SessionValidateError: 401,
-            DataNotFound: 404,
-            ValueError: 110,
-            UncorrectPhoneNumber: 111,
-            UncorrectSmsCode: 112,
-        }
-
-        if isinstance(value, tuple(error_codes.keys())):
-            ercode = error_codes[type(value)]
-            error_message = str(value)
-            wmsg = format_error_txt(error_txt=error_message, code=ercode)
-            logging.error(wmsg)
-            sys.__excepthook__(type, value, traceback)
-            raise StopCode(code=ercode, message=wmsg)
-        elif isinstance(value, requests.exceptions.ConnectionError):
-            raise ConnectionToTheInternetLost
-        elif isinstance(value, ServerError):
-            ercode = value.code
-            error_message = str(value)
-            wmsg = format_error_txt(error_txt=error_message, code=ercode)
-            logging.error(wmsg)
-            sys.__excepthook__(type, value, traceback)
-            raise StopCode(code=ercode, message=wmsg)
-        sys.__excepthook__(type, value, traceback)
-
-        
 
     def current_function_name():
         return inspect.currentframe().f_back.f_code.co_name
@@ -289,7 +251,15 @@ class Foxford_API_Sync:
 
         except Exception as e:
             logging.error(f"Произошло исключение: {type(e).__name__} - {e}")
-            raise UnknownError(f"В функции «login_in_foxford_by_email» произошла непредвиденная ошибка. Ошибка: {e}")
+            if self.stoperrors is False:
+                try:
+                    raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+                except Exception as e:
+                    error_message = str(e)
+                    logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+            else:
+                raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+
 
         finally:
             if driver.reactor:
@@ -377,7 +347,15 @@ class Foxford_API_Sync:
 
         except Exception as e:
             logging.error(f"Произошло исключение: {type(e).__name__} - {e}")
-            raise UnknownError(f"В функции «login_in_foxford_by_phone» произошла непредвиденная ошибка. Ошибка: {e}")
+            if self.stoperrors is False:
+                try:
+                    raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+                except Exception as e:
+                    error_message = str(e)
+                    logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+            else:
+                raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+
 
         finally:
             if driver.reactor:
@@ -410,7 +388,14 @@ class Foxford_API_Sync:
                 return SelfProfile(json_data=pre_data)
             else:
                 if self.log: logging.warning(f"Не удалось получить данные о пользователе")
-                raise UnknownError(f"В функции «get_me» произошла непредвиденная ошибка. Ошибка: {res.json()}")
+                if self.stoperrors is False:
+                    try:
+                        raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+                    except Exception as e:
+                        error_message = str(e)
+                        logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+                else:
+                    raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -441,7 +426,15 @@ class Foxford_API_Sync:
                 raise UserNotFound
             else:
                 if self.log: logging.warning(f"Не удалось получить данные о пользователе с ID {user_id}! Сервер foxford.ru вернул {res.status_code} с ответными данными {res.json()}")
-                raise UnknownError(f"В функции «get_user» произошла непредвиденная ошибка. Ошибка: {res.json()}")
+                if self.stoperrors is False:
+                    try:
+                        raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+                    except Exception as e:
+                        error_message = str(e)
+                        logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+                else:
+                    raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -469,7 +462,15 @@ class Foxford_API_Sync:
                 return FoxBonus(json_data=pre_data)
             else:
                 if self.log: logging.warning(f"Не удалось получить данные о бонусах. Сервер foxford.ru вернул {res.status_code} с ответными данными {res.json()}")
-                raise UnknownError(f"В функции «get_bonus» произошла непредвиденная ошибка. Ошибка: {res.json()}")
+                if self.stoperrors is False:
+                    try:
+                        raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+                    except Exception as e:
+                        error_message = str(e)
+                        logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+                else:
+                    raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -493,7 +494,15 @@ class Foxford_API_Sync:
                 return Unseen_Webinars(json_data=pre_data)
             else:
                 if self.log: logging.warning(f"Произошла ошибка при получении списка не просмотренных Вебинаров. Сервер foxford.ru вернул {res.status_code} с ответными данными {res.json()}")
-                raise UnknownError(f"В функции «get_unseen_webinars» произошла непредвиденная ошибка. Ошибка: {res.json()}")
+                if self.stoperrors is False:
+                    try:
+                        raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+                    except Exception as e:
+                        error_message = str(e)
+                        logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+                else:
+                    raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -606,7 +615,15 @@ class Foxford_API_Sync:
                 return
             else:
                 if self.log: logging.warning("Произошла ошибка при изменении Города в профиле Найти Друзей / Социализация. Возможные причины ошибки ищите в Wiki нашей библиотеки.")
-                raise UnknownError(f"В Функции «social_city_update» произошла непредвиденная ошибка.")
+                if self.stoperrors is False:
+                    try:
+                        raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+                    except Exception as e:
+                        error_message = str(e)
+                        logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+                else:
+                    raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -625,7 +642,15 @@ class Foxford_API_Sync:
                 return
             else:
                 if self.log: logging.warning("Произошла ошибка при изменении Города в профиле Найти Друзей / Социализация. Возможные причины ошибки ищите в Wiki нашей библиотеки.")
-                raise UnknownError(f"В Функции «social_city_update» произошла непредвиденная ошибка.")
+                if self.stoperrors is False:
+                    try:
+                        raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+                    except Exception as e:
+                        error_message = str(e)
+                        logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+                else:
+                    raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -703,7 +728,15 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
                 return
             else:
                 if self.log: logging.warning("Произошла ошибка при изменении Описания в профиле Найти Друзей / Социализация. Возможные причины ошибки ищите в Wiki нашей библиотеки.")
-                raise UnknownError(f"В Функции «social_about_update» произошла непредвиденная ошибка.")
+                if self.stoperrors is False:
+                    try:
+                        raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+                    except Exception as e:
+                        error_message = str(e)
+                        logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+                else:
+                    raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -773,7 +806,15 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
                 raise AccessDeniedError
             else:
                 if self.log: logging.warning(f"Не удалось получить уведомления.")
-                raise UnknownError('В Функции «unread_notifications_get» произошла непредвиденная ошибка.')
+                if self.stoperrors is False:
+                    try:
+                        raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+                    except Exception as e:
+                        error_message = str(e)
+                        logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+                else:
+                    raise UnknownError(f"В функции {self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -859,44 +900,10 @@ class Foxford_API_Async:
         self.log = log
         self.stoperrors = StopErrors
         self.cfs = cfs
-        if self.stoperrors:
-            stoperrors = StopErrors
-            self.loop = asyncio.get_event_loop()
-            self.loop.set_exception_handler(lambda loop, context: asyncio.ensure_future(self.custom_exception_handler_async(loop, context)))
 
-    async def custom_exception_handler_async(loop, context):
-        """
-        Custom exception handler for handling different types of exceptions.
-        """
-        exception = context.get("exception")
-        error_codes = {
-            UnknownError: 501,
-            EmailValidationFail: 502,
-            NeedCaptchaSolving: 503,
-            SessionValidateError: 401,
-            DataNotFound: 404,
-            ValueError: 110,
-            UncorrectPhoneNumber: 111,
-            UncorrectSmsCode: 112,
-        }
-        if isinstance(exception, tuple(error_codes.keys())):
-            ercode = error_codes[type(exception)]
-            error_message = str(exception)
-            wmsg = format_error_txt(error_txt=error_message, code=ercode)
-            logging.error(wmsg)
-            await loop.default_exception_handler(context)
-            raise StopCode(code=ercode, message=wmsg)
-        elif isinstance(exception, aiohttp.ClientConnectionError):
-            raise ConnectionToTheInternetLost
-        elif isinstance(exception, ServerError):
-            ercode = exception.code
-            error_message = str(exception)
-            wmsg = format_error_txt(error_txt=error_message, code=ercode)
-            logging.error(wmsg)
-            await loop.default_exception_handler(context)
-            raise StopCode(code=ercode, message=wmsg)
-        await loop.default_exception_handler(context)
-
+    def current_function_name_sync():
+        return inspect.currentframe().f_back.f_code.co_name
+    
     async def current_function_name():
         return inspect.currentframe().f_back.f_code.co_name
 
@@ -1039,8 +1046,16 @@ class Foxford_API_Async:
             raise NeedCaptchaSolving
         
         except Exception as e:
-            logging.error(f"Произошло исключение: {type(e).__name__} - {e}")
-            raise UnknownError(f"В функции «login_in_foxford_by_email» произошла непредвиденная ошибка. Ошибка: {e}")
+            logging.error(f"Произошло исключение: {type(e).__name__} - {e}")    
+            if self.stoperrors is False:
+                try:
+                    raise UnknownError(f"В функции {self.current_function_name_sync()} произошла непредвиденная ошибка. Ошибка: {e}")
+                except Exception as e:
+                    error_message = str(e)
+                    logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+            else:
+                raise UnknownError(f"В функции {self.current_function_name_sync()} произошла непредвиденная ошибка. Ошибка: {e}")
+
 
         finally:
             if driver.reactor:
@@ -1126,7 +1141,15 @@ class Foxford_API_Async:
 
         except Exception as e:
             logging.error(f"Произошло исключение: {type(e).__name__} - {e}")
-            raise UnknownError(f"В функции «login_in_foxford_by_phone» произошла непредвиденная ошибка. Ошибка: {e}")
+            if self.stoperrors is False:
+                try:
+                    raise UnknownError(f"В функции {self.current_function_name_sync()} произошла непредвиденная ошибка. Ошибка: {e}")
+                except Exception as e:
+                    error_message = str(e)
+                    logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+            else:
+                raise UnknownError(f"В функции {self.current_function_name_sync()} произошла непредвиденная ошибка. Ошибка: {e}")
+
 
         finally:
             if driver.reactor:
@@ -1237,7 +1260,16 @@ class Foxford_API_Async:
                     raise ServerError(message="Упс... Кажется сессия устарела!", subcode=401)
                 else:
                     if self.log: logging.warning(f"Не удалось получить данные о пользователе")
-                    raise UnknownError(f"В функции «get_me» произошла непредвиденная ошибка. Ошибка: {res.json()}")
+                    if self.stoperrors is False:
+                        try:
+                            raise UnknownError(f"В функции {await self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+                        except Exception as e:
+                            error_message = str(e)
+                            logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+                    else:
+                        raise UnknownError(f"В функции {await self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+
+                            
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -1268,7 +1300,15 @@ class Foxford_API_Async:
                     raise UserNotFound
                 else:
                     if self.log: logging.warning(f"Не удалось получить данные о пользователе с ID {user_id}! Сервер foxford.ru вернул {res.status} с ответными данными {await res.json()}")
-                    raise UnknownError(f"В функции «get_user» произошла непредвиденная ошибка. Ошибка: {await res.json()}")
+                    if self.stoperrors is False:
+                        try:
+                            raise UnknownError(f"В функции {await self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+                        except Exception as e:
+                            error_message = str(e)
+                            logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+                    else:
+                        raise UnknownError(f"В функции {await self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -1296,7 +1336,15 @@ class Foxford_API_Async:
                     return FoxBonus(json_data=pre_data)
                 else:
                     if self.log: logging.warning(f"Не удалось получить данные о бонусах. Сервер foxford.ru вернул {res.status} с ответными данными {await res.json}")
-                    raise UnknownError(f"В функции «get_bonus» произошла непредвиденная ошибка. Ошибка: {await res.json()}")
+                    if self.stoperrors is False:
+                        try:
+                            raise UnknownError(f"В функции {await self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+                        except Exception as e:
+                            error_message = str(e)
+                            logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+                    else:
+                        raise UnknownError(f"В функции {await self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -1321,7 +1369,15 @@ class Foxford_API_Async:
                     return Unseen_Webinars(json_data=pre_data)
                 else:
                     if self.log: logging.warning(f"Произошла ошибка при получении списка не просмотренных Вебинаров. Сервер foxford.ru вернул {res.status} с ответными данными {await res.json()}")
-                    raise UnknownError(f"В функции «get_unseen_webinars» произошла непредвиденная ошибка. Ошибка: {await res.json()}")
+                    if self.stoperrors is False:
+                        try:
+                            raise UnknownError(f"В функции {await self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+                        except Exception as e:
+                            error_message = str(e)
+                            logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+                    else:
+                        raise UnknownError(f"В функции {await self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -1434,7 +1490,14 @@ class Foxford_API_Async:
                     return
                 else:
                     if self.log: logging.warning("Произошла ошибка при изменении Города в профиле Найти Друзей / Социализация. Возможные причины ошибки ищите в Wiki нашей библиотеки.")
-                    raise UnknownError(f"В Функции «social_city_update» произошла непредвиденная ошибка.")
+                    if self.stoperrors is False:
+                        try:
+                            raise UnknownError(f"В функции {await self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+                        except Exception as e:
+                            error_message = str(e)
+                            logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+                    else:
+                        raise UnknownError(f"В функции {await self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -1453,7 +1516,14 @@ class Foxford_API_Async:
                     return
                 else:
                     if self.log: logging.warning("Произошла ошибка при изменении Города в профиле Найти Друзей / Социализация. Возможные причины ошибки ищите в Wiki нашей библиотеки.")
-                    raise UnknownError(f"В Функции «social_city_update» произошла непредвиденная ошибка.")
+                    if self.stoperrors is False:
+                        try:
+                            raise UnknownError(f"В функции {await self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+                        except Exception as e:
+                            error_message = str(e)
+                            logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+                    else:
+                        raise UnknownError(f"В функции {await self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -1534,7 +1604,15 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
                     return
                 else:
                     if self.log: logging.warning("Произошла ошибка при изменении Описания в профиле Найти Друзей / Социализация. Возможные причины ошибки ищите в Wiki нашей библиотеки.")
-                    raise UnknownError(f"В Функции «social_about_update» произошла непредвиденная ошибка.")
+                    if self.stoperrors is False:
+                        try:
+                            raise UnknownError(f"В функции {await self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+                        except Exception as e:
+                            error_message = str(e)
+                            logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+                    else:
+                        raise UnknownError(f"В функции {await self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -1593,7 +1671,15 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
                     raise AccessDeniedError
                 else:
                     if self.log: logging.warning(f"Не удалось получить уведомления.")
-                    raise UnknownError('В Функции «unread_notifications_get» произошла непредвиденная ошибка.')
+                    if self.stoperrors is False:
+                        try:
+                            raise UnknownError(f"В функции {await self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+                        except Exception as e:
+                            error_message = str(e)
+                            logging.error(f"Ошибка {type(e).__name__}: {error_message}")
+                    else:
+                        raise UnknownError(f"В функции {await self.current_function_name()} произошла непредвиденная ошибка. Ошибка: {e}")
+
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
