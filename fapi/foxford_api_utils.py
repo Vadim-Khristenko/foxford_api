@@ -4,7 +4,7 @@ import asyncio
 import aiohttp
 import requests
 from packaging import version
-from .foxford_api_errors import *
+from fapi.foxford_api_errors import *
 
 def check_ru_phone_number_sync(phone_number):
     return bool(re.match(r"^(\+7|7|8)?[\s\-]?\(?[489][0-9]{2}\)?[\s\-]?[0-9]{3}[\s\-]?[0-9]{2}[\s\-]?[0-9]{2}$", phone_number))
@@ -71,6 +71,16 @@ async def make_url_async(path, subdomain: str = None):
     main_domain = "https://foxford.ru"
     if subdomain:
         main_domain = f"https://{subdomain}.foxford.ru"
+    url_made = f"{main_domain}{path}"
+    check_status = await validate_url_async(url_made)
+    if check_status:
+        return url_made
+    raise UtilsErrors(message="Неудалось собрать URL-Адрес с указанными параметрами.", util="make_url_async")
+
+async def make_fake_url_async(path, subdomain: str = None):
+    main_domain = "https://foxford.eu"
+    if subdomain:
+        main_domain = f"https://{subdomain}.foxford.eu"
     url_made = f"{main_domain}{path}"
     check_status = await validate_url_async(url_made)
     if check_status:

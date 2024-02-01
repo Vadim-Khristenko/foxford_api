@@ -1,5 +1,5 @@
 import sys
-from .foxford_api_utils import *
+from fapi.foxford_api_utils import *
 
 class DefaultException(Exception):
     def __init__(self, message):

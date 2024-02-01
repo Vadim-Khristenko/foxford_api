@@ -1,8 +1,8 @@
 import datetime
 import json
 import logging
-from .foxford_api_datatypes import *
-from .foxford_api_errors import *
+from fapi.foxford_api_datatypes import *
+from fapi.foxford_api_errors import *
 
 """
 
