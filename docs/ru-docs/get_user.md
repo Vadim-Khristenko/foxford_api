@@ -14,7 +14,7 @@ description: Описание метода get_user()
 
 Возвращает: - `UserProfile`: Экземпляр класса [UserProfile](klassy/userprofile.md), представляющий Профиль полученного пользователя.
 
-Исключения: - `UserNotFound`: Если профиль пользователь с предоставленным идентификатором не найден. - `UnknwonError`: Если произошла непредвиденная ошибка при получении профиля пользователя. - `NotLoggedIn`: Если пользователь не авторизован.
+Исключения: - `UserNotFound`: Если профиль пользователь с предоставленным идентификатором не найден. - `UnknownError`: Если произошла непредвиденная ошибка при получении профиля пользователя. - `NotLoggedIn`: Если пользователь не авторизован.
 
 
 
@@ -27,7 +27,7 @@ try:
     user_id = 1
     user = session.get_user(user_id)
     print(f"Данные пользователя {user.name} успешно получены!")
-except UnknwonError as e:
+except UnknownError as e:
     print(f"Произошла ошибка: {e}")
 except NotLoggedIn:
     print("Пользователь не авторизован")
@@ -42,7 +42,7 @@ try:
     user_id = 1
     user = await session.get_me()
     print(f"Данные пользователя {user.name} успешно получены!")
-except UnknwonError as e:
+except UnknownError as e:
     print(f"Произошла ошибка: {e}")
 except NotLoggedIn:
     print("Пользователь не авторизован")

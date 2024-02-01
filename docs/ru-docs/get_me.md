@@ -12,7 +12,7 @@ description: Описание метода get_me
 
 Возвращает: - `SelfProfile`: Экземпляр класса [SelfProfile](klassy/selfprofile.md), представляющий профиль пользователя.
 
-Вызывает исключения: - `UnknwonError`: Если произошла непредвиденная ошибка при получении профиля пользователя. - `NotLoggedIn`: Если пользователь не авторизован.
+Вызывает исключения: - `UnknownError`: Если произошла непредвиденная ошибка при получении профиля пользователя. - `NotLoggedIn`: Если пользователь не авторизован.
 
 #### Синхронный Вызов:
 
@@ -22,7 +22,7 @@ from fapi import Foxford_API_Sync
 try:
     me = session.get_me()
     print(f"Данные пользователя {me.full_name} успешно получены!")
-except UnknwonError as e:
+except UnknownError as e:
     print(f"Произошла ошибка: {e}")
 except NotLoggedIn:
     print("Пользователь не авторизован")
@@ -37,7 +37,7 @@ from fapi import Foxford_API_Async
 try:
     me = await session.get_me()
     print(f"Данные пользователя {me.full_name} успешно получены!")
-except UnknwonError as e:
+except UnknownError as e:
     print(f"Произошла ошибка: {e}")
 except NotLoggedIn:
     print("Пользователь не авторизован")

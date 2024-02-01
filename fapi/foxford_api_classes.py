@@ -198,6 +198,12 @@ class SelfProfile:
         if self.socialization_profile:
             self.socialization_profile_id =    self.socialization_profile.get("id")
             self.socialization_profile_state = self.socialization_profile.get("state")
+        
+        self.referer =                            data.get("referer")
+        if self.referer:
+            self.refer_user_id =                  self.referer.get("user_id")
+            self.refer_name =                self.referer.get("name")
+            self.refer_avatar_url =          self.referer.get("avatar_url")
 
 class FoxBonus:
     def __init__(self, json_data):
@@ -387,7 +393,7 @@ class UnreadNotification:
         elif isinstance(json_data, dict):
             data = json_data
         elif json_data == []:
-            logging.warning("Данных не обнаружено. | SocialProfile")
+            logging.warning("Данных не обнаружено. | UnreadNotification")
             raise DataNotFound
         else:
             raise ValueError("Неверный формат данных. Ожидается JSON-строка или словарь.")
@@ -409,3 +415,33 @@ class UnreadNotification:
                 setattr(self, f'unread_notification_icon_url_{i}', notifiaction.get("icon_url"))
                 
             setattr(self, f'total_unread_notifications', i)
+            
+class FoxCalendar:
+    def __init__(self, json_data):
+        if isinstance(json_data, str):
+            data = json.loads(json_data)
+        elif isinstance(json_data, dict):
+            data = json_data
+        elif json_data == []:
+            logging.warning("Данных не обнаружено. | FoxCalendar")
+            raise DataNotFound
+        else:
+            raise ValueError("Неверный формат данных. Ожидается JSON-строка или словарь.")
+    
+        self.fox_calendar = data
+        if self.fox_calendar:
+            course = 0
+            coach = 0
+            event = 0
+            attestation = 0
+            payment = 0
+            prolongation = 0
+            self.course_lessons = self.fox_calendar.get("course_lessons")
+            for course_lesson in self.course_lessons:
+                course += 1
+                setattr(self, f"course_lesson_starts_at_{course}", course_lesson.get("starts_at"))
+                setattr(self, f"course_lesson_duration_{course}", course_lesson.get("duration"))
+                setattr(self, f"course_lesson_short_url_{course}", course_lesson.get("url"))
+                setattr(self, f"course_lesson_full_url_{course}", f"https://foxford.ru{course_lesson.get('url')}")
+                setattr(self, f"course_lesson_title_{course}", course_lesson.get("title"))
+                setattr(self, f"discipline_name_{course}", course_lesson.get("discipline_name"))

@@ -1,5 +1,5 @@
 import unittest
-from fapi import UserProfile  # Replace 'your_module' with the actual module where UserProfile is defined
+from fapi import UserProfile
 import json
 
 class TestUserProfile(unittest.TestCase):

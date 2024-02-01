@@ -10,9 +10,12 @@ import requests
 import aiohttp
 import asyncio
 import json
+import sys
 from .foxford_api_errors import *
 from .foxford_api_classes import *
-
+from .foxford_api_utils import *
+import inspect
+stoperrors = None
 """
 
 
@@ -32,7 +35,8 @@ $$/        $$$$$$/  $$/   $$/ $$/        $$$$$$/  $$/   $$/ $$$$$$$/        $$/ 
 
 
 class Foxford_API_Sync:
-    def __init__(self, authorization:int=None, email:str=None, phone:str=None, password:str=None, class_code:str=None, log:bool = True, cfs:bool=True):
+    def __init__(self, authorization:int=None, email:str=None, phone:str=None, password:str=None, class_code:str=None, log:bool = True, cfs:bool=True, StopErrors:bool=True):
+        global stoperrors
         """
         ## Внимание, если вы пытаетесь Использовать Данный метод для входа, то вы ошибаетесь!
         """
@@ -62,11 +66,51 @@ class Foxford_API_Sync:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         }
         self.log = log
+        self.stoperrors = StopErrors
+        if self.stoperrors:
+            sys.excepthook = self.custom_exception_handler_sync
         self.cfs = cfs
 
+    def custom_exception_handler_sync(type, value, traceback):
+        """
+        Custom exception handler for handling different types of exceptions.
+        """
+        error_codes = {
+            UnknownError: 501,
+            EmailValidationFail: 502,
+            NeedCaptchaSolving: 503,
+            SessionValidateError: 401,
+            DataNotFound: 404,
+            ValueError: 110,
+            UncorrectPhoneNumber: 111,
+            UncorrectSmsCode: 112,
+        }
+
+        if isinstance(value, tuple(error_codes.keys())):
+            ercode = error_codes[type(value)]
+            error_message = str(value)
+            wmsg = format_error_txt(error_txt=error_message, code=ercode)
+            logging.error(wmsg)
+            sys.__excepthook__(type, value, traceback)
+            raise StopCode(code=ercode, message=wmsg)
+        elif isinstance(value, requests.exceptions.ConnectionError):
+            raise ConnectionToTheInternetLost
+        elif isinstance(value, ServerError):
+            ercode = value.code
+            error_message = str(value)
+            wmsg = format_error_txt(error_txt=error_message, code=ercode)
+            logging.error(wmsg)
+            sys.__excepthook__(type, value, traceback)
+            raise StopCode(code=ercode, message=wmsg)
+        sys.__excepthook__(type, value, traceback)
+
+        
+
+    def current_function_name():
+        return inspect.currentframe().f_back.f_code.co_name
 
     @staticmethod
-    def login_by_email(email:str, password:str, captcha:bool=False, log:bool = True, create_file_session:bool = True):
+    def login_by_email(email:str, password:str, captcha:bool=False, log:bool = True, create_file_session:bool = True, SErrors:bool=True):
         """
         ### Авторизация пользователя при помощи Почты и Пароля.
 
@@ -81,16 +125,16 @@ class Foxford_API_Sync:
             - `AlreadyLoggedIn`: Если вы уже авторизованы.
             - `NeedCaptchaSolving`: Если нужно ввести Captcha
             - `UncorrectLoginOrPassword` : Если логин или пароль не подходят.
-            - `UnknwonError`: Если произошла непредвиденная ошибка.
+            - `UnknownError`: Если произошла непредвиденная ошибка.
         """
         try:
-            instance = Foxford_API_Sync(log=log)
+            instance = Foxford_API_Sync(log=log, StopErrors=SErrors)
             instance.load_session()
             test_cookies = instance.get_me()
             print(f"Авторизован под: {test_cookies.full_name}")
             return instance
         except Exception as e:
-            instance = Foxford_API_Sync(authorization=1, email=email, password=password, log=log)
+            instance = Foxford_API_Sync(authorization=1, email=email, password=password, log=log, StopErrors=SErrors)
             wait_for_input_captcha = 90 if captcha else 1
             instance.login_in_foxford_by_email(wait_for_input_captcha=wait_for_input_captcha, cfs=create_file_session)
             test_cookies = instance.get_me()
@@ -98,7 +142,7 @@ class Foxford_API_Sync:
             return instance
     
     @staticmethod
-    def login_by_phone(phone:str, captcha:bool=False, log:bool = True, create_file_session:bool = True):
+    def login_by_phone(phone:str, captcha:bool=False, log:bool = True, create_file_session:bool = True, SErrors:bool=True):
         """
         ### Авторизация пользователя по номеру телефона.
                 
@@ -112,16 +156,16 @@ class Foxford_API_Sync:
             - `AlreadyLoggedIn`: Если вы уже авторизованы.
             - `NeedCaptchaSolving`: Если нужно ввести Captcha
             - `UncorrectLoginOrPassword` : Если логин или пароль не подходят.
-            - `UnknwonError`: Если произошла непредвиденная ошибка.
+            - `UnknownError`: Если произошла непредвиденная ошибка.
         """
         try:
-            instance = Foxford_API_Sync(log=log)
+            instance = Foxford_API_Sync(log=log, StopErrors=SErrors)
             instance.load_session()
             test_cookies = instance.get_me()
             print(f"Авторизован под: {test_cookies.full_name}")
             return instance
         except Exception as e:
-            instance = Foxford_API_Sync(authorization=2, phone=phone, log=log)
+            instance = Foxford_API_Sync(authorization=2, phone=phone, log=log, StopErrors=SErrors)
             wait_for_input_captcha = 90 if captcha else 1
             instance.login_in_foxford_by_phone(wait_for_input_captcha=wait_for_input_captcha, cfs=create_file_session)
             test_cookies = instance.get_me()
@@ -138,17 +182,25 @@ class Foxford_API_Sync:
     @staticmethod
     def login_by_test(cookies, log:bool=True):
         instance = Foxford_API_Sync(log=log, cfs=False)
+        if cookies is None:
+            try:
+                raise MissingPriorityArgument("Вы забыли указать Cookies!")
+            except MissingPriorityArgument as e:
+                raise StopCode(code=1, message=f"Stopping the code due to an Error (MissingPriorityArgument| {e}). An error occurred in Function ({instance.current_function_name()})")
         instance.tag_test_load_session(cookies=cookies, log=log)
         test_cookies = instance.get_me()
         print(f"Авторизован под: {test_cookies.full_name}")
         return instance
     def tag_test_load_session(self, cookies, log:bool=True):
-        if log:
-            self.log = log
-        if self.session is None:
-            self.session = requests.Session()
-        cookies = json.loads(cookies)
-        self.session.cookies.update(cookies)
+        try:
+            if log:
+                self.log = log
+            if self.session is None:
+                self.session = requests.Session()
+            cookies = json.loads(cookies)
+            self.session.cookies.update(cookies)
+        except:
+            raise StopCode(code=1, message=f"Stopping the code due to an Error (UnknownError). An error occurred in Function ({self.current_function_name()})")
 
     def close_session(self):
         """
@@ -177,7 +229,7 @@ class Foxford_API_Sync:
                 - `AlreadyLoggedIn`: Если вы уже авторизованы.
                 - `NeedCaptchaSolving`: Если нужно ввести Captcha
                 - `UncorrectLoginOrPassword` : Если логин или пароль не подходят.
-                - `UnknwonError`: Если произошла непредвиденная ошибка.
+                - `UnknownError`: Если произошла непредвиденная ошибка.
         """
         if self.session is not None:
             raise AlreadyLoggedIn
@@ -237,7 +289,7 @@ class Foxford_API_Sync:
 
         except Exception as e:
             logging.error(f"Произошло исключение: {type(e).__name__} - {e}")
-            raise UnknwonError(f"В функции «login_in_foxford_by_email» произошла непредвиденная ошибка. Ошибка: {e}")
+            raise UnknownError(f"В функции «login_in_foxford_by_email» произошла непредвиденная ошибка. Ошибка: {e}")
 
         finally:
             if driver.reactor:
@@ -263,7 +315,7 @@ class Foxford_API_Sync:
                 - `NeedCaptchaSolving`: Если нужно ввести Captcha
                 - `UncorrectPhoneNumberFormat`: Если телефон имеет неправильный формат
                 - `UncorrectSmsCode`: Если код из SMS был введён в поле "Ввод кода" неправильно.
-                - `UnknwonError`: Если произошла непредвиденная ошибка.
+                - `UnknownError`: Если произошла непредвиденная ошибка.
         """
         if self.session is not None:
             raise AlreadyLoggedIn
@@ -325,7 +377,7 @@ class Foxford_API_Sync:
 
         except Exception as e:
             logging.error(f"Произошло исключение: {type(e).__name__} - {e}")
-            raise UnknwonError(f"В функции «login_in_foxford_by_phone» произошла непредвиденная ошибка. Ошибка: {e}")
+            raise UnknownError(f"В функции «login_in_foxford_by_phone» произошла непредвиденная ошибка. Ошибка: {e}")
 
         finally:
             if driver.reactor:
@@ -347,7 +399,7 @@ class Foxford_API_Sync:
             - `SelfProfile`: Экземпляр класса SelfProfile, представляющий профиль пользователя.
         
         Вызывает исключения:
-            - `UnknwonError`: Если произошла непредвиденная ошибка при получении профиля пользователя.
+            - `UnknownError`: Если произошла непредвиденная ошибка при получении профиля пользователя.
             - `NotLoggedIn`: Если пользователь не авторизован.
         """
         if self.session is not None:
@@ -358,7 +410,7 @@ class Foxford_API_Sync:
                 return SelfProfile(json_data=pre_data)
             else:
                 if self.log: logging.warning(f"Не удалось получить данные о пользователе")
-                raise UnknwonError(f"В функции «get_me» произошла непредвиденная ошибка. Ошибка: {res.json()}")
+                raise UnknownError(f"В функции «get_me» произошла непредвиденная ошибка. Ошибка: {res.json()}")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -375,7 +427,7 @@ class Foxford_API_Sync:
         
         Исключения:
             - `UserNotFound`: Если профиль пользователь с предоставленным идентификатором не найден.
-            - `UnknwonError`: Если произошла непредвиденная ошибка при получении профиля пользователя.
+            - `UnknownError`: Если произошла непредвиденная ошибка при получении профиля пользователя.
             - `NotLoggedIn`: Если пользователь не авторизован.
         """
         if self.session is not None:
@@ -389,7 +441,7 @@ class Foxford_API_Sync:
                 raise UserNotFound
             else:
                 if self.log: logging.warning(f"Не удалось получить данные о пользователе с ID {user_id}! Сервер foxford.ru вернул {res.status_code} с ответными данными {res.json()}")
-                raise UnknwonError(f"В функции «get_user» произошла непредвиденная ошибка. Ошибка: {res.json()}")
+                raise UnknownError(f"В функции «get_user» произошла непредвиденная ошибка. Ошибка: {res.json()}")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -406,7 +458,7 @@ class Foxford_API_Sync:
             - `FoxBonus`: Экземпляр класса FoxBonus, содержащий полученные бонусные транзакции.
         
         Исключения:
-            - `UnknwonError`: Если происходит неожиданная ошибка при получении бонусных транзакций.
+            - `UnknownError`: Если происходит неожиданная ошибка при получении бонусных транзакций.
             - `NotLoggedIn`: Если пользователь не авторизован.
         """
         if self.session is not None:
@@ -417,7 +469,7 @@ class Foxford_API_Sync:
                 return FoxBonus(json_data=pre_data)
             else:
                 if self.log: logging.warning(f"Не удалось получить данные о бонусах. Сервер foxford.ru вернул {res.status_code} с ответными данными {res.json()}")
-                raise UnknwonError(f"В функции «get_bonus» произошла непредвиденная ошибка. Ошибка: {res.json()}")
+                raise UnknownError(f"В функции «get_bonus» произошла непредвиденная ошибка. Ошибка: {res.json()}")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -441,7 +493,7 @@ class Foxford_API_Sync:
                 return Unseen_Webinars(json_data=pre_data)
             else:
                 if self.log: logging.warning(f"Произошла ошибка при получении списка не просмотренных Вебинаров. Сервер foxford.ru вернул {res.status_code} с ответными данными {res.json()}")
-                raise UnknwonError(f"В функции «get_unseen_webinars» произошла непредвиденная ошибка. Ошибка: {res.json()}")
+                raise UnknownError(f"В функции «get_unseen_webinars» произошла непредвиденная ошибка. Ошибка: {res.json()}")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -554,7 +606,7 @@ class Foxford_API_Sync:
                 return
             else:
                 if self.log: logging.warning("Произошла ошибка при изменении Города в профиле Найти Друзей / Социализация. Возможные причины ошибки ищите в Wiki нашей библиотеки.")
-                raise UnknwonError(f"В Функции «social_city_update» произошла непредвиденная ошибка.")
+                raise UnknownError(f"В Функции «social_city_update» произошла непредвиденная ошибка.")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -573,7 +625,7 @@ class Foxford_API_Sync:
                 return
             else:
                 if self.log: logging.warning("Произошла ошибка при изменении Города в профиле Найти Друзей / Социализация. Возможные причины ошибки ищите в Wiki нашей библиотеки.")
-                raise UnknwonError(f"В Функции «social_city_update» произошла непредвиденная ошибка.")
+                raise UnknownError(f"В Функции «social_city_update» произошла непредвиденная ошибка.")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -590,7 +642,7 @@ class Foxford_API_Sync:
         Исключения:
             - `InconsistentArgumentsSpecified`: Если указаны и all_automate и no_input как True.
             - `MissingPriorityArgument`: Если при no_input отсутствует аргумент about_me.
-            - `UnknwonError`: Если произошла неизвестная ошибка при обновлении.
+            - `UnknownError`: Если произошла неизвестная ошибка при обновлении.
             - `NotLoggedIn`: Если пользователь не авторизован.
         """
         if all_automate and no_input is True:
@@ -651,7 +703,7 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
                 return
             else:
                 if self.log: logging.warning("Произошла ошибка при изменении Описания в профиле Найти Друзей / Социализация. Возможные причины ошибки ищите в Wiki нашей библиотеки.")
-                raise UnknwonError(f"В Функции «social_about_update» произошла непредвиденная ошибка.")
+                raise UnknownError(f"В Функции «social_about_update» произошла непредвиденная ошибка.")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -707,7 +759,7 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
                     
         Вызывает:
             - `AccessDeniedError`: Если сервер возвращает статус код 403.
-            - `UnknwonError`: Если происходит неизвестная ошибка во время запроса.
+            - `UnknownError`: Если происходит неизвестная ошибка во время запроса.
             - `NotLoggedIn`: Если пользователь не аутентифицирован.
         """
         if self.session:
@@ -721,7 +773,7 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
                 raise AccessDeniedError
             else:
                 if self.log: logging.warning(f"Не удалось получить уведомления.")
-                raise UnknwonError('В Функции «unread_notifications_get» произошла непредвиденная ошибка.')
+                raise UnknownError('В Функции «unread_notifications_get» произошла непредвиденная ошибка.')
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -773,7 +825,8 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
 #-------------------------------------------------------------------------------------------------
         
 class Foxford_API_Async:
-    def __init__(self, authorization:int=None, email:str=None, phone:str=None, password:str=None, class_code:str=None, log:bool = True, cfs:bool = True):
+    def __init__(self, authorization:int=None, email:str=None, phone:str=None, password:str=None, class_code:str=None, log:bool = True, cfs:bool = True, StopErrors:bool=True):
+        global stoperrors
         """
         ## Внимание, если вы пытаетесь Использовать Данный метод для входа, то вы ошибаетесь!
         """
@@ -804,10 +857,51 @@ class Foxford_API_Async:
         }
         self.url = "https://foxford.ru"
         self.log = log
+        self.stoperrors = StopErrors
         self.cfs = cfs
+        if self.stoperrors:
+            stoperrors = StopErrors
+            self.loop = asyncio.get_event_loop()
+            self.loop.set_exception_handler(lambda loop, context: asyncio.ensure_future(self.custom_exception_handler_async(loop, context)))
+
+    async def custom_exception_handler_async(loop, context):
+        """
+        Custom exception handler for handling different types of exceptions.
+        """
+        exception = context.get("exception")
+        error_codes = {
+            UnknownError: 501,
+            EmailValidationFail: 502,
+            NeedCaptchaSolving: 503,
+            SessionValidateError: 401,
+            DataNotFound: 404,
+            ValueError: 110,
+            UncorrectPhoneNumber: 111,
+            UncorrectSmsCode: 112,
+        }
+        if isinstance(exception, tuple(error_codes.keys())):
+            ercode = error_codes[type(exception)]
+            error_message = str(exception)
+            wmsg = format_error_txt(error_txt=error_message, code=ercode)
+            logging.error(wmsg)
+            await loop.default_exception_handler(context)
+            raise StopCode(code=ercode, message=wmsg)
+        elif isinstance(exception, aiohttp.ClientConnectionError):
+            raise ConnectionToTheInternetLost
+        elif isinstance(exception, ServerError):
+            ercode = exception.code
+            error_message = str(exception)
+            wmsg = format_error_txt(error_txt=error_message, code=ercode)
+            logging.error(wmsg)
+            await loop.default_exception_handler(context)
+            raise StopCode(code=ercode, message=wmsg)
+        await loop.default_exception_handler(context)
+
+    async def current_function_name():
+        return inspect.currentframe().f_back.f_code.co_name
 
     @staticmethod
-    async def login_by_email(email:str, password:str, captcha:bool=False, log:bool = True, create_file_session:bool = True):
+    async def login_by_email(email:str, password:str, captcha:bool=False, log:bool = True, create_file_session:bool = True, SErrors:bool=True):
         """
         ### Авторизация пользователя при помощи Почты и Пароля.
 
@@ -823,25 +917,28 @@ class Foxford_API_Async:
             - `AlreadyLoggedIn`: Если вы уже авторизованы.
             - `NeedCaptchaSolving`: Если нужно ввести Captcha
             - `UncorrectLoginOrPassword` : Если логин или пароль не подходят.
-            - `UnknwonError`: Если произошла непредвиденная ошибка.
+            - `UnknownError`: Если произошла непредвиденная ошибка.
         """
         try:
-            instance = Foxford_API_Async(log=log, cfs=create_file_session)
-            await instance.load_session(log=log)
+            instance = Foxford_API_Async(log=log, cfs=create_file_session, StopErrors=SErrors)
+            await instance.load_session(log=log, SErrors=SErrors)
             test_cookies = await instance.get_me()
             print(f"Авторизован под: {test_cookies.full_name}")
             return instance
         except Exception as e:
-            instance = Foxford_API_Async(authorization=1, email=email, password=password, log=log, cfs=create_file_session)
-            wait_for_input_captcha = 90 if captcha else 1
-            instance.login_in_foxford_by_email(wait_for_input_captcha)
-            if create_file_session: await instance.load_session(log=log)
-            test_cookies = await instance.get_me()
-            print(f"Авторизован под: {test_cookies.full_name}")
-            return instance
+            validate = await check_email_async(email)
+            if validate:
+                instance = Foxford_API_Async(authorization=1, email=email, password=password, log=log, cfs=create_file_session, StopErrors=SErrors)
+                wait_for_input_captcha = 90 if captcha else 1
+                instance.login_in_foxford_by_email(wait_for_input_captcha)
+                if create_file_session: await instance.load_session(log=log, SErrors=SErrors)
+                test_cookies = await instance.get_me()
+                print(f"Авторизован под: {test_cookies.full_name}")
+                return instance
+            raise EmailValidationFail
     
     @staticmethod
-    async def login_by_phone(phone:str, captcha:bool=False, log:bool = True, create_file_session:bool = True):
+    async def login_by_phone(phone:str, captcha:bool=False, log:bool = True, create_file_session:bool = True, SErrors:bool=True):
         """
         ### Авторизация пользователя по номеру телефона.
                 
@@ -856,19 +953,19 @@ class Foxford_API_Async:
             - `AlreadyLoggedIn`: Если вы уже авторизованы.
             - `NeedCaptchaSolving`: Если нужно ввести Captcha
             - `UncorrectLoginOrPassword` : Если логин или пароль не подходят.
-            - `UnknwonError`: Если произошла непредвиденная ошибка.
+            - `UnknownError`: Если произошла непредвиденная ошибка.
         """
         try:
-            instance = Foxford_API_Async(log=log, cfs=create_file_session)
-            await instance.load_session(log=log)
+            instance = Foxford_API_Async(log=log, cfs=create_file_session, StopErrors=SErrors)
+            await instance.load_session(log=log, SErrors=SErrors)
             test_cookies = await instance.get_me()
             print(f"Авторизован под: {test_cookies.full_name}")
             return instance
         except Exception as e:
-            instance = Foxford_API_Async(authorization=2, phone=phone, log=log, cfs=create_file_session)
+            instance = Foxford_API_Async(authorization=2, phone=phone, log=log, cfs=create_file_session, StopErrors=SErrors)
             wait_for_input_captcha = 90 if captcha else 1
             instance.login_in_foxford_by_phone(wait_for_input_captcha)
-            if create_file_session: await instance.load_session(log=log)
+            if create_file_session: await instance.load_session(log=log, SErrors=SErrors)
             test_cookies = await instance.get_me()
             print(f"Авторизован под: {test_cookies.full_name}")
             return instance
@@ -884,7 +981,7 @@ class Foxford_API_Async:
                 - `AlreadyLoggedIn`: Если вы уже авторизованы.
                 - `NeedCaptchaSolving`: Если нужно ввести Captcha
                 - `UncorrectLoginOrPassword` : Если логин или пароль не подходят.
-                - `UnknwonError`: Если произошла непредвиденная ошибка.
+                - `UnknownError`: Если произошла непредвиденная ошибка.
         """
         if self.session is not None:
             AlreadyLoggedIn
@@ -940,10 +1037,10 @@ class Foxford_API_Async:
 
         except TimeoutException:
             raise NeedCaptchaSolving
-
+        
         except Exception as e:
             logging.error(f"Произошло исключение: {type(e).__name__} - {e}")
-            raise UnknwonError(f"В функции «login_in_foxford_by_email» произошла непредвиденная ошибка. Ошибка: {e}")
+            raise UnknownError(f"В функции «login_in_foxford_by_email» произошла непредвиденная ошибка. Ошибка: {e}")
 
         finally:
             if driver.reactor:
@@ -968,7 +1065,7 @@ class Foxford_API_Async:
                 - `NeedCaptchaSolving`: Если нужно ввести Captcha
                 - `UncorrectPhoneNumberFormat`: Если телефон имеет неправильный формат
                 - `UncorrectSmsCode`: Если код из SMS был введён в поле "Ввод кода" неправильно.
-                - `UnknwonError`: Если произошла непредвиденная ошибка.
+                - `UnknownError`: Если произошла непредвиденная ошибка.
         """
         if self.session is not None:
             AlreadyLoggedIn
@@ -1029,7 +1126,7 @@ class Foxford_API_Async:
 
         except Exception as e:
             logging.error(f"Произошло исключение: {type(e).__name__} - {e}")
-            raise UnknwonError(f"В функции «login_in_foxford_by_phone» произошла непредвиденная ошибка. Ошибка: {e}")
+            raise UnknownError(f"В функции «login_in_foxford_by_phone» произошла непредвиденная ошибка. Ошибка: {e}")
 
         finally:
             if driver.reactor:
@@ -1042,7 +1139,7 @@ class Foxford_API_Async:
                 driver.quit()
                 logging.warning("Предупреждение! Возможно Google Driver не закрылся окончательно проверьте Дисптчер задач.")
 
-    async def load_session(self, log:bool = True):
+    async def load_session(self, log:bool = True, SErrors:bool = True):
         """
         ### Загружает сессию
         Данный метод предназначен для загрузки Сессии из Файла `FOXSESSION.session`
@@ -1053,6 +1150,8 @@ class Foxford_API_Async:
         """
         if log:
             self.log = log
+        if SErrors:
+            self.stoperrors = SErrors
         if self.session is None:
             self.session = aiohttp.ClientSession()
         with open('FOXSESSION.session', 'r') as file:
@@ -1073,6 +1172,11 @@ class Foxford_API_Async:
     @staticmethod
     async def login_by_test(cookie, log:bool=True):
         instance = Foxford_API_Async(log=log, cfs=False)
+        if cookies is None:
+            try:
+                raise MissingPriorityArgument("Вы забыли указать Cookies!")
+            except MissingPriorityArgument as e:
+                raise StopCode(code=1, message=f"Stopping the code due to an Error (MissingPriorityArgument| {e}). An error occurred in Function ({await instance.current_function_name()})")
         cookies = json.loads(cookie)
         await instance.tag_test_load_session(cookies=cookies, log=log)
         test_cookies = await instance.get_me()
@@ -1120,7 +1224,7 @@ class Foxford_API_Async:
             - `SelfProfile`: Экземпляр класса SelfProfile, представляющий профиль пользователя.
         
         Вызывает исключения:
-            - `UnknwonError`: Если произошла непредвиденная ошибка при получении профиля пользователя.
+            - `UnknownError`: Если произошла непредвиденная ошибка при получении профиля пользователя.
             - `NotLoggedIn`: Если пользователь не авторизован.
         """
         if self.session is not None:
@@ -1129,9 +1233,11 @@ class Foxford_API_Async:
                     pre_data = await res.json()
                     if self.log: logging.info(f"Успешно получены Данные о вашем Профиле!")
                     return SelfProfile(json_data=pre_data)
+                elif res.status in [401, 403]:
+                    raise ServerError(message="Упс... Кажется сессия устарела!", subcode=401)
                 else:
                     if self.log: logging.warning(f"Не удалось получить данные о пользователе")
-                    raise UnknwonError(f"В функции «get_me» произошла непредвиденная ошибка. Ошибка: {res.json()}")
+                    raise UnknownError(f"В функции «get_me» произошла непредвиденная ошибка. Ошибка: {res.json()}")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -1148,7 +1254,7 @@ class Foxford_API_Async:
         
         Исключения:
             - `UserNotFound`: Если профиль пользователь с предоставленным идентификатором не найден.
-            - `UnknwonError`: Если произошла непредвиденная ошибка при получении профиля пользователя.
+            - `UnknownError`: Если произошла непредвиденная ошибка при получении профиля пользователя.
             - `NotLoggedIn`: Если пользователь не авторизован.
         """
         if self.session is not None:
@@ -1162,7 +1268,7 @@ class Foxford_API_Async:
                     raise UserNotFound
                 else:
                     if self.log: logging.warning(f"Не удалось получить данные о пользователе с ID {user_id}! Сервер foxford.ru вернул {res.status} с ответными данными {await res.json()}")
-                    raise UnknwonError(f"В функции «get_user» произошла непредвиденная ошибка. Ошибка: {await res.json()}")
+                    raise UnknownError(f"В функции «get_user» произошла непредвиденная ошибка. Ошибка: {await res.json()}")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -1179,7 +1285,7 @@ class Foxford_API_Async:
             - `FoxBonus`: Экземпляр класса FoxBonus, содержащий полученные бонусные транзакции.
         
         Вызывает:
-            - `UnknwonError`: Если происходит неожиданная ошибка при получении бонусных транзакций.
+            - `UnknownError`: Если происходит неожиданная ошибка при получении бонусных транзакций.
             - `NotLoggedIn`: Если пользователь не авторизован.
         """
         if self.session is not None:
@@ -1190,7 +1296,7 @@ class Foxford_API_Async:
                     return FoxBonus(json_data=pre_data)
                 else:
                     if self.log: logging.warning(f"Не удалось получить данные о бонусах. Сервер foxford.ru вернул {res.status} с ответными данными {await res.json}")
-                    raise UnknwonError(f"В функции «get_bonus» произошла непредвиденная ошибка. Ошибка: {await res.json()}")
+                    raise UnknownError(f"В функции «get_bonus» произошла непредвиденная ошибка. Ошибка: {await res.json()}")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -1215,7 +1321,7 @@ class Foxford_API_Async:
                     return Unseen_Webinars(json_data=pre_data)
                 else:
                     if self.log: logging.warning(f"Произошла ошибка при получении списка не просмотренных Вебинаров. Сервер foxford.ru вернул {res.status} с ответными данными {await res.json()}")
-                    raise UnknwonError(f"В функции «get_unseen_webinars» произошла непредвиденная ошибка. Ошибка: {await res.json()}")
+                    raise UnknownError(f"В функции «get_unseen_webinars» произошла непредвиденная ошибка. Ошибка: {await res.json()}")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -1328,7 +1434,7 @@ class Foxford_API_Async:
                     return
                 else:
                     if self.log: logging.warning("Произошла ошибка при изменении Города в профиле Найти Друзей / Социализация. Возможные причины ошибки ищите в Wiki нашей библиотеки.")
-                    raise UnknwonError(f"В Функции «social_city_update» произошла непредвиденная ошибка.")
+                    raise UnknownError(f"В Функции «social_city_update» произошла непредвиденная ошибка.")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -1347,7 +1453,7 @@ class Foxford_API_Async:
                     return
                 else:
                     if self.log: logging.warning("Произошла ошибка при изменении Города в профиле Найти Друзей / Социализация. Возможные причины ошибки ищите в Wiki нашей библиотеки.")
-                    raise UnknwonError(f"В Функции «social_city_update» произошла непредвиденная ошибка.")
+                    raise UnknownError(f"В Функции «social_city_update» произошла непредвиденная ошибка.")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -1364,7 +1470,7 @@ class Foxford_API_Async:
         Исключения:
             - `InconsistentArgumentsSpecified`: Если указаны и all_automate и no_input как True.
             - `MissingPriorityArgument`: Если при no_input отсутствует аргумент about_me.
-            - `UnknwonError`: Если произошла неизвестная ошибка при обновлении.
+            - `UnknownError`: Если произошла неизвестная ошибка при обновлении.
             - `NotLoggedIn`: Если пользователь не авторизован.
         """
         if all_automate and no_input is True:
@@ -1428,7 +1534,7 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
                     return
                 else:
                     if self.log: logging.warning("Произошла ошибка при изменении Описания в профиле Найти Друзей / Социализация. Возможные причины ошибки ищите в Wiki нашей библиотеки.")
-                    raise UnknwonError(f"В Функции «social_about_update» произошла непредвиденная ошибка.")
+                    raise UnknownError(f"В Функции «social_about_update» произошла непредвиденная ошибка.")
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn
@@ -1487,7 +1593,7 @@ FAPI: https://github.com/Vadim-Khristenko/foxford_api
                     raise AccessDeniedError
                 else:
                     if self.log: logging.warning(f"Не удалось получить уведомления.")
-                    raise UnknwonError('В Функции «unread_notifications_get» произошла непредвиденная ошибка.')
+                    raise UnknownError('В Функции «unread_notifications_get» произошла непредвиденная ошибка.')
         else:
             if self.log: logging.critical("Вы не Авторизованы!")
             raise NotLoggedIn

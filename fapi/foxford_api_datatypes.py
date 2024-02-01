@@ -70,3 +70,27 @@ NOTIFICATION_TRANSLATIONS = {
     "скоро занятие!": "lesson_near",
     "фоксики": "foxbonus"
 }
+
+# Всё ещё не полный список...
+# Нужен человек с Аккаунтом 9-11 класса.
+DISCIPLINE_TRANSLATIONS = {
+    "русский язык": "russian",
+    "английский язык": "english",
+    "математика": "math",
+    "алгебра": "algebra",
+    "геометрия": "geometry",
+    "история": "history",
+    "программирование": "programming",
+    "физика": "physics",
+    "немецкий язык": "german",
+    "биология": "biology",
+    "физическая культура": "physical_culture",
+    "информатика": "informatics",
+    "география": "geography",
+    "обществознание": "social_science",
+    "межпредметный": "interdisciplinary",
+    "музыка": "music",
+    "общеразвивающие курсы": "general_educational_courses",
+    "литература": "literature",
+    "внеурочная деятельность": "extracurricular_activities"
+}
