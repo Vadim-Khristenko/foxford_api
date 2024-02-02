@@ -1,3 +1,4 @@
+import socket
 import sys
 import re
 import asyncio
@@ -148,6 +149,11 @@ def format_error_txt(error_txt: str, code: int) -> str:
     Returns:
         str: The formatted error message.
     """
+    trimmed_text = error_txt.lstrip()
+    if trimmed_text:
+        error_txt = trimmed_text
+    else:
+        error_txt = "Error information not found!"
     def get_error_type(code: int) -> str:
         if code == 510:
             return "Ошибка Библиотеки Foxford API раздел Utils:"
@@ -163,4 +169,38 @@ def format_error_txt(error_txt: str, code: int) -> str:
             return "Неизвестная ошибка:"
     
     type_err: str = get_error_type(code)
+    return f'{type_err} {error_txt}'
+
+async def format_error_txt_async(error_txt: str, code: int) -> str:
+    """
+    Format the error text based on the error code.
+
+    Args:
+        error_txt (str): The error message.
+        code (int): The error code.
+
+    Returns:
+        str: The formatted error message.
+    """
+    trimmed_text = error_txt.lstrip()
+    if trimmed_text:
+        error_txt = trimmed_text
+    else:
+        error_txt = "Error information not found!"
+
+    async def get_error_type_async(code: int) -> str:
+        if code == 510:
+            return "Ошибка Библиотеки Foxford API раздел Utils:"
+        elif code == 503:
+            return "Ошибка соединения с Интернетом:"
+        elif 0 <= code < 200:
+            return "Ошибка в работе Библиотеки Foxford API и работе с Сервером FOXFORD:"
+        elif 400 <= code < 500:
+            return "Сервер FOXFORD вернул:"
+        elif 500 <= code < 600:
+            return "Ошибка Библиотеки Foxford API:"
+        else:
+            return "Неизвестная ошибка:"
+    
+    type_err: str = await get_error_type_async(code)
     return f'{type_err} {error_txt}'
