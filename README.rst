@@ -21,10 +21,8 @@ FOXFORD API - Library for interaction with the backend of the `Foxford <https://
 
 FOXFORD API provides a convenient and flexible interface for working with the backend of the `Foxford <https://foxford.ru>`_ educational platform. It allows you to make requests to the API, obtain data about courses, students and other system objects, as well as interact with the backend to automate processes.
 
-
-========
 Some Info
-========
+==========
 
 - Support for asynchronous requests for efficient work with data.
 
@@ -35,9 +33,8 @@ Some Info
 - FOXFORD API is not an official `Foxford <https://foxford.ru>`_ library and is not directly related to the developers or administration of the platform.
 
 
-========
 `Documentation <https://volt-diamond.gitbook.io/foxford-api-docs/>`_
-========
+=====================================================================
 
     Click on the text above to open the documentation or enter the address: https://volt-diamond.gitbook.io/foxford-api-docs/ .
 
