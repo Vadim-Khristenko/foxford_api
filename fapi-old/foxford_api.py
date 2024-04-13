@@ -1123,6 +1123,8 @@ class Foxford_API_Async:
             enable_cdp_events=True
         )
         driver.get('https://google.com/')
+        bpid = driver.browser_pid
+        chrome_ser_pid = driver.service.process.pid
         
         phone_login_phone = self.phone
         self.session = aiohttp.ClientSession()

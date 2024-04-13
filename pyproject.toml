@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "FOXFORD_API"
+dynamic = ["version"]
+dependencies = [
+  "aiohttp",
+  "loguru",
+  "undetected_chromedriver",
+  "asyncio",
+  "packaging",
+  "pydantic>=2.4.1,<2.7"
+]
+requires-python = ">=3.9"
+authors = [
+  {name = "VAI || Programmer", email = "volt.diamond.1@gmail.com"},
+]
+classifiers = [
+  "Framework :: AsyncIO",
+  "Environment :: Console",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+]
+license = {file = "LICENSE"}
+readme = "https://github.com/Vadim-Khristenko/foxford_api/blob/main/README.rst"
+
+[project.urls]
+Homepage = "https://volt-diamond.gitbook.io/foxford-api-docs/"
+Documentation = "https://volt-diamond.gitbook.io/foxford-api-docs/"
+Repository = "https://github.com/Vadim-Khristenko/foxford_api/"
+Issues = "https://github.com/Vadim-Khristenko/foxford_api/issues"
+Changelog = "https://github.com/Vadim-Khristenko/foxford_api/blob/main/CHANGELOG.rst"
+
+[project.optional-dependencies]
+old = [
+  "colorlog",
+  "selenium",
+  "requests"
+]
+
+[tool.hatch.version]
+path = "fapi/__meta__.py"

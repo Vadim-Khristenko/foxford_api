@@ -1,4 +1,9 @@
-__pycache__
-.vscode
+*__pycache__
+*.vscode
 FOXSESSION.session
+*.session
 test.py
+*.idea
+.idea
+__pycache__
+FAPI_Venv

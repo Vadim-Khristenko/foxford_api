@@ -1,0 +1,7 @@
+undetected_chromedriver
+selenium
+requests
+aiohttp
+packaging
+asyncio
+colorlog
