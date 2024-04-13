@@ -98,6 +98,7 @@ class CConnector_FAPI:
 
     def foxford_auth(self, login: str, password: str, **kwargs):
         if self.status == Status_Core.offline:
+            raise
 
 
 

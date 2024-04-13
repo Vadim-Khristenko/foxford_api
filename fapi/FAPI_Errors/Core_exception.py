@@ -1,14 +1,25 @@
+from loguru import (Logger,
+                    logger as log)
+
+
+class RetryAfterData_Core:
+    def __init__(self, retry_count: int, retry_max: int, retry_after: int, need_exception: bool = False):
+        self.retry_count = retry_count
+        self.retry_max = retry_max
+        self.retry_after = retry_after
+        self.need_exception = need_exception
+
+
 class CoreException(Exception):
     def __init__(self, message: str):
         super().__init__(message)
-
-    pass
 
 
 class NoInternetConnection(CoreException):
     def __init__(self):
         super().__init__(
-            "Sorry, but there is no Internet connection. The FAPI core was unable to connect to the Internet, which is why this exception was caused."
+            "Sorry, but there is no Internet connection. "
+            "The FAPI core was unable to connect to the Internet, which is why this exception was caused."
         )
 
 
@@ -84,3 +95,45 @@ class SendCoreException:
             raise UserAlreadyAuthenticated
         else:
             raise CoreException(f"Unknown error code: {code}")
+
+
+class SendCoreWarning:
+    def __init__(self, logger: Logger = None, warn_level: str = None):
+        if logger:
+            self.logger = logger.bind(name = "FAPI_Core_WARN")
+        else:
+            self.logger = log.bind(name = "FAPI_Core_WARN")
+
+        if warn_level:
+            if warn_level == "debug":
+                self.warn = self.logger.debug
+            elif warn_level == "info":
+                self.warn = self.logger.info
+            elif warn_level == "warning":
+                self.warn = self.logger.warning
+            elif warn_level == "error":
+                self.warn = self.logger.error
+            elif warn_level == "critical":
+                self.warn = self.logger.critical
+            else:
+                raise ValueError(f"Invalid warn_level: {warn_level}")
+        else:
+            self.warn = self.logger.warning
+
+    def sync_send(self, code: int, **kwargs):
+        if code == 1:
+            self.warn(
+                f"""The Internet connection seems to have broken down!
+                The FAPI kernel is attempting to reconnect.
+                Attempt: {kwargs['retry_count']} from {kwargs['retry_max']} | Retry after: {kwargs['retry_after']}"""
+            )
+            return RetryAfterData_Core(retry_count = kwargs["retry_count"] + 1, retry_max = kwargs["retry_max"], retry_after = kwargs["retry_after"]*2, need_exception = kwargs['retry_count']+1 >= kwargs['retry_max'])
+
+    async def async_send(self, code: int, **kwargs):
+        if code == 1:
+            self.warn(
+                f"""The Internet connection seems to have broken down!
+                The FAPI kernel is attempting to reconnect.
+                Attempt: {kwargs['retry_count']} from {kwargs['retry_max']} | Retry after: {kwargs['retry_after']}"""
+            )
+            return RetryAfterData_Core(retry_count = kwargs["retry_count"] + 1, retry_max = kwargs["retry_max"], retry_after = kwargs["retry_after"]*2, need_exception = kwargs['retry_count']+1 >= kwargs['retry_max'])
